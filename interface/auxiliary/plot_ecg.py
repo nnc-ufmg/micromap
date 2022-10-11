@@ -12,16 +12,18 @@ file_nnc = "G:\\Outros computadores\\Desktop\\GitHub\\acquisition_system\\valida
 file_open_ehpys = "G:\\Outros computadores\\Desktop\\GitHub\\acquisition_system\\validation_data\\validation_data_openephys\\"
 
 files_nnc = next(walk(file_nnc), (None, None, []))[2][:-1]
-files_nnc = [file_nnc + "\\" + file for file in files_nnc]
+files_nnc = [file_nnc + file for file in files_nnc]
+files_nnc = sorted(files_nnc)
 files_open_ehpys = next(walk(file_open_ehpys), (None, [], None))[1]
 files_open_ehpys = [file_open_ehpys + file + "\\Record Node 121" for file in files_open_ehpys]
+files_open_ehpys = sorted(files_open_ehpys)
 
 class read_nnc():
     def __init__(self, file, file_number, num_channels, rate):
         _file = open(file[file_number], "rb")
         _byte_data = _file.read()
-        _byte_data = _byte_data[4:]
-        _byte_data = _byte_data[:-(num_channels-2)*2]
+        _byte_data = _byte_data[8:]
+        _byte_data = _byte_data[:-(num_channels-4)*2]
         _channel_count = range(0, num_channels)                                         # Creates a vector with the number of channels lenght
         _data_length = len(_byte_data)
         _unpack_format = "<" + str(int(_data_length/2)) + "h"                           # Format to struct.unpack( ) function reads the data 
@@ -38,7 +40,7 @@ class read_nnc():
             self.data[_channel].append((_sample))                                       # Adds the values on the circular buffer
 
         self.data = numpy.array(self.data)
-        self.data = [a - numpy.mean(a) for a in self.data]
+        #self.data = [a - numpy.mean(a) for a in self.data]
         
         self.max_value = numpy.max(self.data)
         self.min_value = numpy.min(self.data)
@@ -55,8 +57,7 @@ class read_nnc():
 class read_openephys():
     def __init__(self, file, file_number):
         print(file[file_number])
-        ChannelMap = [0,1,2,3,4]
-        _data, _rate = Binary.Load(file[file_number], ChannelMap=ChannelMap)
+        _data, _rate = Binary.Load(file[file_number])
         _data = _data[list(_data.keys())[0]]
         _data = _data[list(_data.keys())[0]]
         _data = _data[list(_data.keys())[0]]
@@ -154,8 +155,7 @@ class analysis():
         fig.tight_layout()
         plt.show()
 
-
-file_number = 8
+file_number = 1
 open_ephys = read_openephys(files_open_ehpys, file_number)
 open_ephys.bandpass_filter(0.1, 50)
 num_channels = open_ephys.channels
@@ -167,24 +167,12 @@ nnc.bandpass_filter(0.1, 50)
 comparision = analysis(nnc, open_ephys)
 comparision.plot_all()
 #comparision.correlaction(1)
-
 comparision.average_window()
 
-# b,a = iirnotch(60, 1, 2000)
-# data_matrix[1] = filtfilt(b, a, data_matrix[1], axis=0, padtype='odd', padlen=None, method='pad', irlen=None)
-
-# plt.figure() 
-# N = 2000
-# T = 1.0 / 
-# x = numpy.linspace(0.0, N*T, N, endpoint=False)
-# yf = fft(list(data_matrix[1]))
-# xf = fftfreq(N, T)[:N//2]
-# plt.plot(xf, 2.0/N * numpy.abs(yf[0:N//2]), linewidth = 0.5)
+# plt.figure()                                                                                            # Clears the last plot made in the interface
+# for a in range(0, num_channels):                                                                   # Loop through all the rows of the matrix
+#     plt.subplot(num_channels//2 + 1, 2, a + 1)    
+#     plt.plot(nnc.data[a], color = (160/255, 17/255, 8/255, 1), linewidth = 0.5)                    # Plots the respective data and for each channel add the channel number for better visualization of the data                                                      # Draws on the interface
 # plt.show()
-                 
-# #print(byte_data.hex('/'))
-# #print(data)
-# #print(data_matrix[0])
-# #print(data_matrix[20])
 
-print("A")
+pass

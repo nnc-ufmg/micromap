@@ -114,7 +114,7 @@
          <string notr="true">QTabWidget::pane {border-top:2px solid #2C53A1;position: absolute;top: -0.5em;}QTabWidget::tab-bar{alignment: center;}QTabBar::tab{background:#606060;border:2px solid #606060;border-bottom-color: #606060;border-top-left-radius:8px;border-top-right-radius:8px;border-bottom-left-radius:8px;border-bottom-right-radius:8px;width: 45ex;height:7ex;padding:0px;color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;margin-left:2px;margin-right:2px;}QTabBar::tab:selected{background:#606060; border: 2px solid #2C53A1;border-bottom-color:#2C53A1;}</string>
         </property>
         <property name="currentIndex">
-         <number>0</number>
+         <number>2</number>
         </property>
         <property name="usesScrollButtons">
          <bool>false</bool>
@@ -2479,9 +2479,9 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
            <property name="geometry">
             <rect>
              <x>20</x>
-             <y>550</y>
+             <y>530</y>
              <width>141</width>
-             <height>41</height>
+             <height>31</height>
             </rect>
            </property>
            <property name="cursor">
@@ -2501,9 +2501,9 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
            <property name="geometry">
             <rect>
              <x>170</x>
-             <y>550</y>
+             <y>530</y>
              <width>141</width>
-             <height>41</height>
+             <height>31</height>
             </rect>
            </property>
            <property name="cursor">
@@ -2558,7 +2558,7 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
            <property name="geometry">
             <rect>
              <x>20</x>
-             <y>290</y>
+             <y>270</y>
              <width>291</width>
              <height>251</height>
             </rect>

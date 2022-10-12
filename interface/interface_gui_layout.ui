@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>970</width>
+    <width>847</width>
     <height>719</height>
    </rect>
   </property>
@@ -46,7 +46,7 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>952</width>
+         <width>829</width>
          <height>701</height>
         </rect>
        </property>
@@ -73,6 +73,12 @@
            <width>281</width>
            <height>20</height>
           </rect>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>281</width>
+           <height>20</height>
+          </size>
          </property>
          <property name="text">
           <string notr="true">DATA ACQUISITION SYSTEM</string>
@@ -130,134 +136,140 @@
           <property name="geometry">
            <rect>
             <x>10</x>
-            <y>450</y>
+            <y>430</y>
             <width>311</width>
-            <height>131</height>
+            <height>151</height>
            </rect>
           </property>
           <property name="styleSheet">
            <string notr="true">QCheckBox{color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;}QCheckBox::indicator{width:12px;height:12px;background-color:#606060;border-radius:3px;}QCheckBox::indicator:checked{background-color:#A21F27;}QLabel{color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;}QLineEdit{border:#969696;background-color:#606060;border-radius:8px;color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;}</string>
           </property>
-          <widget class="QLabel" name="logo_image_label1">
+          <widget class="QWidget" name="">
            <property name="geometry">
             <rect>
              <x>0</x>
-             <y>10</y>
-             <width>81</width>
-             <height>101</height>
-            </rect>
-           </property>
-           <property name="text">
-            <string/>
-           </property>
-           <property name="pixmap">
-            <pixmap>icon/NNC_logo.png</pixmap>
-           </property>
-           <property name="scaledContents">
-            <bool>true</bool>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-          </widget>
-          <widget class="QWidget" name="verticalLayoutWidget_4">
-           <property name="geometry">
-            <rect>
-             <x>100</x>
-             <y>26</y>
-             <width>211</width>
-             <height>94</height>
-            </rect>
-           </property>
-           <layout class="QVBoxLayout" name="verticalLayout_4">
-            <item>
-             <widget class="QPushButton" name="record_button">
-              <property name="cursor">
-               <cursorShape>PointingHandCursor</cursorShape>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QPushButton{border:2px solid #A21F27;border-radius:8px;background-color:#2C53A1;color:#FFFFFF;font:13pt&quot;DejaVu Sans&quot;;font-weight:bold;padding:8px}QPushButton:pressed{border:2px solid #A21F27;border-radius:8px;background-color:#A21F27;color:#FFFFFF;padding:8px}QPushButton::!enabled{border:2px solid #969696;border-radius:8px;background-color:#606060;color:#FFFFFF;font:7pt&quot;Helvetica&quot;;font-weight:bold;padding:8px;}</string>
-              </property>
-              <property name="text">
-               <string notr="true">RECORD</string>
-              </property>
-              <property name="checked">
-               <bool>false</bool>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="clear_button">
-              <property name="cursor">
-               <cursorShape>PointingHandCursor</cursorShape>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QPushButton{border:2px solid #A21F27;border-radius:8px;background-color:#2C53A1;color:#FFFFFF;font:8pt&quot;DejaVu Sans&quot;;font-weight:bold;padding:5px}QPushButton:pressed{border:2px solid #A21F27;border-radius:8px;background-color:#A21F27;color:#FFFFFF;padding:5px}QPushButton::!enabled{border:2px solid #969696;border-radius:8px;background-color:#606060;color:#FFFFFF;font:7pt&quot;Helvetica&quot;;font-weight:bold;padding:5px}</string>
-              </property>
-              <property name="text">
-               <string notr="true">CLEAR</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QCheckBox" name="advanced_checkbox">
-              <property name="layoutDirection">
-               <enum>Qt::RightToLeft</enum>
-              </property>
-              <property name="text">
-               <string>Advanced Settings</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </widget>
-          <widget class="QWidget" name="gridLayoutWidget_9">
-           <property name="geometry">
-            <rect>
-             <x>100</x>
              <y>0</y>
-             <width>211</width>
-             <height>21</height>
+             <width>311</width>
+             <height>141</height>
             </rect>
            </property>
-           <layout class="QGridLayout" name="gridLayout_10">
-            <property name="spacing">
-             <number>0</number>
-            </property>
-            <item row="0" column="0">
-             <widget class="QPushButton" name="usb_port">
-              <property name="styleSheet">
-               <string notr="true">QPushButton{border-top-left-radius:8px;border-bottom-left-radius:8px;background-color:#606060;padding:0px}QPushButton:pressed{border:2px solid #A21F27;border-top-left-radius:8px;border-bottom-left-radius:8px;background-color:#A21F27;color:#FFFFFF;}QPushButton::!enabled{border:2px solid #969696;border-top-left-radius:8px;border-bottom-left-radius:8px;;background-color:#606060;color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;}</string>
+           <layout class="QHBoxLayout" name="horizontalLayout_4">
+            <item>
+             <widget class="QLabel" name="logo_image_label1">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Maximum" vsizetype="Maximum">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="maximumSize">
+               <size>
+                <width>94</width>
+                <height>123</height>
+               </size>
               </property>
               <property name="text">
                <string/>
               </property>
-              <property name="icon">
-               <iconset>
-                <normaloff>icon/NNC_update_button.png</normaloff>icon/NNC_update_button.png</iconset>
+              <property name="pixmap">
+               <pixmap>icon/NNC_logo.png</pixmap>
+              </property>
+              <property name="scaledContents">
+               <bool>true</bool>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
               </property>
              </widget>
             </item>
-            <item row="0" column="1">
-             <widget class="QComboBox" name="usb_port_combobox">
-              <property name="cursor">
-               <cursorShape>PointingHandCursor</cursorShape>
-              </property>
-              <property name="styleSheet">
-               <string notr="true">QComboBox{color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;background-color:#606060;border:0px;border-top-right-radius:8px;border-bottom-right-radius:8px;padding-left:20px;padding-right:20px;}QListView{color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;background-color:#969696;border:0px;}QListView{color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;background-color:#606060;border:0px;border-radius:6px;}QComboBox::drop-down{width:20px;border:5px;}QComboBox::down-arrow{border-left:2px solid none;border-right:2px solid none;border-top:2px solid #FFFFFF;width:0.5px;height:0.5px;border-radius:2px;}QComboBox::down-arrow:hover{background-color:#606060;border-left:2px solid none;border-right:2px solid none;border-top:2px solid #A21F27;width:0.5px;height:1px;border-radius:2px;}QAbstractItemView{border:2px solid #969696;selection-background-color:#2C53A1;}</string>
-              </property>
-              <property name="currentText">
-               <string notr="true">Update to find ports</string>
-              </property>
-              <property name="currentIndex">
-               <number>0</number>
-              </property>
+            <item>
+             <layout class="QVBoxLayout" name="verticalLayout_5">
               <item>
-               <property name="text">
-                <string notr="true">Update to find ports</string>
-               </property>
+               <layout class="QGridLayout" name="gridLayout_10">
+                <property name="spacing">
+                 <number>0</number>
+                </property>
+                <item row="0" column="0">
+                 <widget class="QPushButton" name="usb_port">
+                  <property name="styleSheet">
+                   <string notr="true">QPushButton{border-top-left-radius:8px;border-bottom-left-radius:8px;background-color:#606060;padding:0px}QPushButton:pressed{border:2px solid #A21F27;border-top-left-radius:8px;border-bottom-left-radius:8px;background-color:#A21F27;color:#FFFFFF;}QPushButton::!enabled{border:2px solid #969696;border-top-left-radius:8px;border-bottom-left-radius:8px;;background-color:#606060;color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;}</string>
+                  </property>
+                  <property name="text">
+                   <string/>
+                  </property>
+                  <property name="icon">
+                   <iconset>
+                    <normaloff>icon/NNC_update_button.png</normaloff>icon/NNC_update_button.png</iconset>
+                  </property>
+                 </widget>
+                </item>
+                <item row="0" column="1">
+                 <widget class="QComboBox" name="usb_port_combobox">
+                  <property name="cursor">
+                   <cursorShape>PointingHandCursor</cursorShape>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">QComboBox{color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;background-color:#606060;border:0px;border-top-right-radius:8px;border-bottom-right-radius:8px;padding-left:20px;padding-right:20px;}QListView{color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;background-color:#969696;border:0px;}QListView{color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;background-color:#606060;border:0px;border-radius:6px;}QComboBox::drop-down{width:20px;border:5px;}QComboBox::down-arrow{border-left:2px solid none;border-right:2px solid none;border-top:2px solid #FFFFFF;width:0.5px;height:0.5px;border-radius:2px;}QComboBox::down-arrow:hover{background-color:#606060;border-left:2px solid none;border-right:2px solid none;border-top:2px solid #A21F27;width:0.5px;height:1px;border-radius:2px;}QAbstractItemView{border:2px solid #969696;selection-background-color:#2C53A1;}</string>
+                  </property>
+                  <property name="currentText">
+                   <string notr="true">Update to find ports</string>
+                  </property>
+                  <property name="currentIndex">
+                   <number>0</number>
+                  </property>
+                  <item>
+                   <property name="text">
+                    <string notr="true">Update to find ports</string>
+                   </property>
+                  </item>
+                 </widget>
+                </item>
+               </layout>
               </item>
-             </widget>
+              <item>
+               <layout class="QVBoxLayout" name="verticalLayout_4">
+                <item>
+                 <widget class="QPushButton" name="record_button">
+                  <property name="cursor">
+                   <cursorShape>PointingHandCursor</cursorShape>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">QPushButton{border:2px solid #A21F27;border-radius:8px;background-color:#2C53A1;color:#FFFFFF;font:13pt&quot;DejaVu Sans&quot;;font-weight:bold;padding:8px}QPushButton:pressed{border:2px solid #A21F27;border-radius:8px;background-color:#A21F27;color:#FFFFFF;padding:8px}QPushButton::!enabled{border:2px solid #969696;border-radius:8px;background-color:#606060;color:#FFFFFF;font:7pt&quot;Helvetica&quot;;font-weight:bold;padding:8px;}</string>
+                  </property>
+                  <property name="text">
+                   <string notr="true">RECORD</string>
+                  </property>
+                  <property name="checked">
+                   <bool>false</bool>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QPushButton" name="clear_button">
+                  <property name="cursor">
+                   <cursorShape>PointingHandCursor</cursorShape>
+                  </property>
+                  <property name="styleSheet">
+                   <string notr="true">QPushButton{border:2px solid #A21F27;border-radius:8px;background-color:#2C53A1;color:#FFFFFF;font:8pt&quot;DejaVu Sans&quot;;font-weight:bold;padding:5px}QPushButton:pressed{border:2px solid #A21F27;border-radius:8px;background-color:#A21F27;color:#FFFFFF;padding:5px}QPushButton::!enabled{border:2px solid #969696;border-radius:8px;background-color:#606060;color:#FFFFFF;font:7pt&quot;Helvetica&quot;;font-weight:bold;padding:5px}</string>
+                  </property>
+                  <property name="text">
+                   <string notr="true">CLEAR</string>
+                  </property>
+                 </widget>
+                </item>
+                <item>
+                 <widget class="QCheckBox" name="advanced_checkbox">
+                  <property name="layoutDirection">
+                   <enum>Qt::RightToLeft</enum>
+                  </property>
+                  <property name="text">
+                   <string>Advanced Settings</string>
+                  </property>
+                 </widget>
+                </item>
+               </layout>
+              </item>
+             </layout>
             </item>
            </layout>
           </widget>
@@ -2257,31 +2269,6 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
             <bool>true</bool>
            </property>
           </widget>
-          <widget class="QLineEdit" name="chip_lineedit">
-           <property name="geometry">
-            <rect>
-             <x>60</x>
-             <y>20</y>
-             <width>211</width>
-             <height>21</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLineEdit{border:#969696;background-color:#A21F27;border-radius:8px;color:#FFFFFF;font:7pt&quot;helvetica&quot;;font-weight:bold;}</string>
-           </property>
-           <property name="text">
-            <string notr="true">ADC CHIP - RHD2216</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-           <property name="dragEnabled">
-            <bool>false</bool>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-          </widget>
           <widget class="QPushButton" name="command_send_button">
            <property name="geometry">
             <rect>
@@ -2304,25 +2291,6 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
             <bool>false</bool>
            </property>
           </widget>
-          <widget class="QLabel" name="label_56">
-           <property name="geometry">
-            <rect>
-             <x>20</x>
-             <y>60</y>
-             <width>291</width>
-             <height>21</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QLabel{border:#969696;background-color:#2C53A1;border-radius:8px;color:#FFFFFF;font:7pt&quot;helvetica&quot;;font-weight:bold;}</string>
-           </property>
-           <property name="text">
-            <string notr="true">WRITE THE COMMAND TO BE SENT</string>
-           </property>
-           <property name="alignment">
-            <set>Qt::AlignCenter</set>
-           </property>
-          </widget>
           <widget class="QLineEdit" name="command_message_lineedit">
            <property name="geometry">
             <rect>
@@ -2340,50 +2308,6 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
            </property>
            <property name="alignment">
             <set>Qt::AlignCenter</set>
-           </property>
-          </widget>
-          <widget class="QPushButton" name="continue_to_record_button">
-           <property name="geometry">
-            <rect>
-             <x>20</x>
-             <y>520</y>
-             <width>141</width>
-             <height>41</height>
-            </rect>
-           </property>
-           <property name="cursor">
-            <cursorShape>PointingHandCursor</cursorShape>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QPushButton{border:2px solid #A21F27;border-radius:8px;background-color:#2C53A1;color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;}QPushButton:pressed{border:2px solid #A21F27;border-radius:8px;background-color:#A21F27;color:#FFFFFF;}QPushButton::!enabled{border:2px solid #969696;border-radius:8px;background-color:#606060;color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;}</string>
-           </property>
-           <property name="text">
-            <string notr="true">CONTINUE TO RECORD</string>
-           </property>
-           <property name="checked">
-            <bool>false</bool>
-           </property>
-          </widget>
-          <widget class="QPushButton" name="cancel_advanced_button">
-           <property name="geometry">
-            <rect>
-             <x>170</x>
-             <y>520</y>
-             <width>141</width>
-             <height>41</height>
-            </rect>
-           </property>
-           <property name="cursor">
-            <cursorShape>PointingHandCursor</cursorShape>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QPushButton{border:2px solid #A21F27;border-radius:8px;background-color:#2C53A1;color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;}QPushButton:pressed{border:2px solid #A21F27;border-radius:8px;background-color:#A21F27;color:#FFFFFF;}QPushButton::!enabled{border:2px solid #969696;border-radius:8px;background-color:#606060;color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;}</string>
-           </property>
-           <property name="text">
-            <string notr="true">CANCEL</string>
-           </property>
-           <property name="checked">
-            <bool>false</bool>
            </property>
           </widget>
           <widget class="QLabel" name="label_1">
@@ -2418,51 +2342,145 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
             <string>  0x</string>
            </property>
           </widget>
-          <widget class="QTextEdit" name="show_commands_textedit">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
+          <widget class="QWidget" name="">
            <property name="geometry">
             <rect>
              <x>20</x>
-             <y>280</y>
+             <y>20</y>
              <width>291</width>
-             <height>231</height>
+             <height>61</height>
             </rect>
            </property>
-           <property name="styleSheet">
-            <string notr="true">QTextEdit{color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold}</string>
-           </property>
-           <property name="frameShape">
-            <enum>QFrame::Box</enum>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
+           <layout class="QGridLayout" name="gridLayout_15">
+            <item row="2" column="0" colspan="3">
+             <widget class="QLabel" name="label_56">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Preferred" vsizetype="Minimum">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>0</width>
+                <height>22</height>
+               </size>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLabel{border:#969696;background-color:#2C53A1;border-radius:8px;color:#FFFFFF;font:7pt&quot;helvetica&quot;;font-weight:bold;}</string>
+              </property>
+              <property name="text">
+               <string notr="true">WRITE THE COMMAND TO BE SENT</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="0">
+             <spacer name="horizontalSpacer_12">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Maximum</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>80</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="0" column="1">
+             <widget class="QLineEdit" name="chip_lineedit">
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Minimum" vsizetype="Minimum">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="minimumSize">
+               <size>
+                <width>90</width>
+                <height>22</height>
+               </size>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QLineEdit{border:#969696;background-color:#A21F27;border-radius:8px;color:#FFFFFF;font:7pt&quot;helvetica&quot;;font-weight:bold;}</string>
+              </property>
+              <property name="text">
+               <string notr="true">ADC CHIP - RHD2216</string>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignCenter</set>
+              </property>
+              <property name="dragEnabled">
+               <bool>false</bool>
+              </property>
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item row="0" column="2">
+             <spacer name="horizontalSpacer_13">
+              <property name="orientation">
+               <enum>Qt::Horizontal</enum>
+              </property>
+              <property name="sizeType">
+               <enum>QSizePolicy::Maximum</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>80</width>
+                <height>20</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+            <item row="1" column="1">
+             <spacer name="verticalSpacer">
+              <property name="orientation">
+               <enum>Qt::Vertical</enum>
+              </property>
+              <property name="sizeHint" stdset="0">
+               <size>
+                <width>20</width>
+                <height>40</height>
+               </size>
+              </property>
+             </spacer>
+            </item>
+           </layout>
           </widget>
-          <widget class="QTextEdit" name="show_commands_textedit_2">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
+          <widget class="QWidget" name="">
            <property name="geometry">
             <rect>
              <x>20</x>
              <y>150</y>
-             <width>141</width>
-             <height>121</height>
+             <width>291</width>
+             <height>161</height>
             </rect>
            </property>
-           <property name="styleSheet">
-            <string notr="true">QTextEdit{color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold}</string>
-           </property>
-           <property name="frameShape">
-            <enum>QFrame::Box</enum>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-           <property name="html">
-            <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+           <layout class="QHBoxLayout" name="horizontalLayout_2">
+            <item>
+             <widget class="QTextEdit" name="show_commands_textedit_2">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QTextEdit{color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold}</string>
+              </property>
+              <property name="frameShape">
+               <enum>QFrame::Box</enum>
+              </property>
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+              <property name="html">
+               <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'DejaVu Sans'; font-size:7pt; font-weight:600; font-style:normal;&quot;&gt;
@@ -2488,34 +2506,28 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Read R61 | C500FD00&lt;/p&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Read R62 | C500FE00&lt;/p&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Read R63 | C500FF00&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-           </property>
-           <property name="textInteractionFlags">
-            <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
-           </property>
-          </widget>
-          <widget class="QTextEdit" name="show_commands_textedit_3">
-           <property name="enabled">
-            <bool>false</bool>
-           </property>
-           <property name="geometry">
-            <rect>
-             <x>170</x>
-             <y>150</y>
-             <width>141</width>
-             <height>121</height>
-            </rect>
-           </property>
-           <property name="styleSheet">
-            <string notr="true">QTextEdit{color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold}</string>
-           </property>
-           <property name="frameShape">
-            <enum>QFrame::Box</enum>
-           </property>
-           <property name="readOnly">
-            <bool>true</bool>
-           </property>
-           <property name="html">
-            <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
+              </property>
+              <property name="textInteractionFlags">
+               <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QTextEdit" name="show_commands_textedit_3">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QTextEdit{color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold}</string>
+              </property>
+              <property name="frameShape">
+               <enum>QFrame::Box</enum>
+              </property>
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+              <property name="html">
+               <string>&lt;!DOCTYPE HTML PUBLIC &quot;-//W3C//DTD HTML 4.0//EN&quot; &quot;http://www.w3.org/TR/REC-html40/strict.dtd&quot;&gt;
 &lt;html&gt;&lt;head&gt;&lt;meta name=&quot;qrichtext&quot; content=&quot;1&quot; /&gt;&lt;style type=&quot;text/css&quot;&gt;
 p, li { white-space: pre-wrap; }
 &lt;/style&gt;&lt;/head&gt;&lt;body style=&quot; font-family:'DejaVu Sans'; font-size:7pt; font-weight:600; font-style:normal;&quot;&gt;
@@ -2537,10 +2549,95 @@ p, li { white-space: pre-wrap; }
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Write R15 | C5008FXX&lt;/p&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Write R16 | C50090XX&lt;/p&gt;
 &lt;p style=&quot; margin-top:0px; margin-bottom:0px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;&quot;&gt;Write R17 | C50091XX&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+              </property>
+              <property name="textInteractionFlags">
+               <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </widget>
+          <widget class="QWidget" name="">
+           <property name="geometry">
+            <rect>
+             <x>20</x>
+             <y>320</y>
+             <width>291</width>
+             <height>241</height>
+            </rect>
            </property>
-           <property name="textInteractionFlags">
-            <set>Qt::TextSelectableByKeyboard|Qt::TextSelectableByMouse</set>
-           </property>
+           <layout class="QVBoxLayout" name="verticalLayout_3">
+            <item>
+             <widget class="QTextEdit" name="show_commands_textedit">
+              <property name="enabled">
+               <bool>false</bool>
+              </property>
+              <property name="sizePolicy">
+               <sizepolicy hsizetype="Expanding" vsizetype="Maximum">
+                <horstretch>0</horstretch>
+                <verstretch>0</verstretch>
+               </sizepolicy>
+              </property>
+              <property name="styleSheet">
+               <string notr="true">QTextEdit{color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold}</string>
+              </property>
+              <property name="frameShape">
+               <enum>QFrame::Box</enum>
+              </property>
+              <property name="readOnly">
+               <bool>true</bool>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <layout class="QHBoxLayout" name="horizontalLayout_3">
+              <item>
+               <widget class="QPushButton" name="continue_to_record_button">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="cursor">
+                 <cursorShape>PointingHandCursor</cursorShape>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QPushButton{border:2px solid #A21F27;border-radius:8px;background-color:#2C53A1;color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;}QPushButton:pressed{border:2px solid #A21F27;border-radius:8px;background-color:#A21F27;color:#FFFFFF;}QPushButton::!enabled{border:2px solid #969696;border-radius:8px;background-color:#606060;color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;}</string>
+                </property>
+                <property name="text">
+                 <string notr="true">CONTINUE TO RECORD</string>
+                </property>
+                <property name="checked">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+              <item>
+               <widget class="QPushButton" name="cancel_advanced_button">
+                <property name="sizePolicy">
+                 <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                  <horstretch>0</horstretch>
+                  <verstretch>0</verstretch>
+                 </sizepolicy>
+                </property>
+                <property name="cursor">
+                 <cursorShape>PointingHandCursor</cursorShape>
+                </property>
+                <property name="styleSheet">
+                 <string notr="true">QPushButton{border:2px solid #A21F27;border-radius:8px;background-color:#2C53A1;color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;}QPushButton:pressed{border:2px solid #A21F27;border-radius:8px;background-color:#A21F27;color:#FFFFFF;}QPushButton::!enabled{border:2px solid #969696;border-radius:8px;background-color:#606060;color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;}</string>
+                </property>
+                <property name="text">
+                 <string notr="true">CANCEL</string>
+                </property>
+                <property name="checked">
+                 <bool>false</bool>
+                </property>
+               </widget>
+              </item>
+             </layout>
+            </item>
+           </layout>
           </widget>
          </widget>
         </widget>

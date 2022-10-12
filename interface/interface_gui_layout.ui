@@ -144,7 +144,7 @@
           <property name="styleSheet">
            <string notr="true">QCheckBox{color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;}QCheckBox::indicator{width:12px;height:12px;background-color:#606060;border-radius:3px;}QCheckBox::indicator:checked{background-color:#A21F27;}QLabel{color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;}QLineEdit{border:#969696;background-color:#606060;border-radius:8px;color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;}</string>
           </property>
-          <widget class="QWidget" name="">
+          <widget class="QWidget" name="layoutWidget">
            <property name="geometry">
             <rect>
              <x>0</x>
@@ -2342,7 +2342,7 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
             <string>  0x</string>
            </property>
           </widget>
-          <widget class="QWidget" name="">
+          <widget class="QWidget" name="layoutWidget">
            <property name="geometry">
             <rect>
              <x>20</x>
@@ -2403,7 +2403,7 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
               </property>
               <property name="minimumSize">
                <size>
-                <width>90</width>
+                <width>170</width>
                 <height>22</height>
                </size>
               </property>
@@ -2455,7 +2455,7 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="">
+          <widget class="QWidget" name="layoutWidget">
            <property name="geometry">
             <rect>
              <x>20</x>
@@ -2557,7 +2557,7 @@ p, li { white-space: pre-wrap; }
             </item>
            </layout>
           </widget>
-          <widget class="QWidget" name="">
+          <widget class="QWidget" name="layoutWidget">
            <property name="geometry">
             <rect>
              <x>20</x>

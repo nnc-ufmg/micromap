@@ -821,7 +821,14 @@ class interface_visual_gui(QMainWindow):
     def start_timers_function(self):
         '''
         This public function starts the user-programmed timer for the duration of the experiment.
-        '''        
+        '''
+
+        '''
+        # TODO This function is not working properly. 
+        It is not showing the correct time in at the end of the experiment.
+        Find out why and fix it.
+        '''
+
         self.timer = QTimer(self)                                                                               # Initializes the timer to end the data acquisition
         self.timer.setInterval(self.options.get_total_time()*1000)                                              # The timer is in milliseconds, so multiply the total time by 1000
         self.timer.setSingleShot(True)

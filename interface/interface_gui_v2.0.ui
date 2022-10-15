@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>964</width>
+    <width>737</width>
     <height>710</height>
    </rect>
   </property>
@@ -97,10 +97,10 @@
       <widget class="QWidget" name="scrollAreaWidgetContents">
        <property name="geometry">
         <rect>
-         <x>0</x>
+         <x>-53</x>
          <y>0</y>
-         <width>370</width>
-         <height>692</height>
+         <width>351</width>
+         <height>675</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -156,7 +156,7 @@
             </property>
             <property name="geometry">
              <rect>
-              <x>20</x>
+              <x>10</x>
               <y>390</y>
               <width>341</width>
               <height>211</height>
@@ -2089,7 +2089,7 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
            </attribute>
            <widget class="QFrame" name="advanced_frame">
             <property name="enabled">
-             <bool>false</bool>
+             <bool>true</bool>
             </property>
             <property name="geometry">
              <rect>
@@ -2361,7 +2361,7 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
               <item>
                <widget class="QTextEdit" name="show_commands_textedit_2">
                 <property name="enabled">
-                 <bool>false</bool>
+                 <bool>true</bool>
                 </property>
                 <property name="styleSheet">
                  <string notr="true">QTextEdit{color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold}</string>
@@ -2408,7 +2408,7 @@ p, li { white-space: pre-wrap; }
               <item>
                <widget class="QTextEdit" name="show_commands_textedit_3">
                 <property name="enabled">
-                 <bool>false</bool>
+                 <bool>true</bool>
                 </property>
                 <property name="styleSheet">
                  <string notr="true">QTextEdit{color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold}</string>

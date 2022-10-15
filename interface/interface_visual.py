@@ -270,7 +270,7 @@ class interface_visual_gui(QMainWindow):
         '''
         super(interface_visual_gui, self).__init__()                                                            # Calls the inherited classes __init__ method
         QMainWindow.__init__(self)                                                                              # Creates the main window
-        self.interface = uic.loadUi(os.path.dirname(__file__) + "\\interface_gui.ui", self)                                                 # Loads the interface design archive (made in Qt Designer)
+        self.interface = uic.loadUi(os.path.dirname(__file__) + "\\interface_gui_v2.0.ui", self)                                                 # Loads the interface design archive (made in Qt Designer)
                 
         self.plot_viewer_function()
         self.showMaximized()

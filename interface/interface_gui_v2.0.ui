@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>737</width>
+    <width>935</width>
     <height>710</height>
    </rect>
   </property>
@@ -79,6 +79,9 @@
         <height>700</height>
        </size>
       </property>
+      <property name="styleSheet">
+       <string notr="true">QScrollArea{border:0px}QScrollBar:vertical{background:#353535;width:5px}QScrollBar::handle:vertical{background:#2C53A1;min-width:20px;}QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical{background:#353535;}QScrollBar:horizontal{background:#353535;height:5px}QScrollBar::handle:horizontal{background:#2C53A1;min-width:20px;}QScrollBar::add-page:horizontal,QScrollBar::sub-page:horizontal{background:#353535;}</string>
+      </property>
       <property name="frameShape">
        <enum>QFrame::NoFrame</enum>
       </property>
@@ -97,10 +100,10 @@
       <widget class="QWidget" name="scrollAreaWidgetContents">
        <property name="geometry">
         <rect>
-         <x>-53</x>
+         <x>0</x>
          <y>0</y>
-         <width>351</width>
-         <height>675</height>
+         <width>370</width>
+         <height>692</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -141,7 +144,7 @@
            <string notr="true">QTabWidget::pane {border-top:2px solid #2C53A1;position: absolute;top: -0.5em;}QTabWidget::tab-bar{alignment: center;}QTabBar::tab{background:#606060;border:2px solid #606060;border-bottom-color: #606060;border-top-left-radius:8px;border-top-right-radius:8px;border-bottom-left-radius:8px;border-bottom-right-radius:8px;width: 45ex;height:7ex;padding:0px;color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;margin-left:2px;margin-right:2px;}QTabBar::tab:selected{background:#606060; border: 2px solid #2C53A1;border-bottom-color:#2C53A1;}</string>
           </property>
           <property name="currentIndex">
-           <number>0</number>
+           <number>2</number>
           </property>
           <property name="usesScrollButtons">
            <bool>false</bool>

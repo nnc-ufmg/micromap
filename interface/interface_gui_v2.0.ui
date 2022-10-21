@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>935</width>
-    <height>710</height>
+    <width>1001</width>
+    <height>720</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -18,7 +18,7 @@
   </property>
   <widget class="QWidget" name="main_window">
    <property name="styleSheet">
-    <string notr="true">QWidget{	background-color:#353535;}</string>
+    <string notr="true">QWidget{	background-color:#353535;}QScrollArea{border:0px}QScrollBar:vertical{background:#353535;width:5px}QScrollBar::handle:vertical{background:#2C53A1;min-width:20px;}QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical{background:#353535;}QScrollBar:horizontal{background:#353535;height:5px}QScrollBar::handle:horizontal{background:#2C53A1;min-width:20px;}QScrollBar::add-page:horizontal,QScrollBar::sub-page:horizontal{background:#353535;}</string>
    </property>
    <layout class="QGridLayout" name="gridLayout">
     <item row="0" column="1">
@@ -44,7 +44,7 @@
          <x>0</x>
          <y>0</y>
          <width>763</width>
-         <height>675</height>
+         <height>697</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_7">
@@ -73,6 +73,12 @@
     </item>
     <item row="0" column="0">
      <widget class="QScrollArea" name="settings_scroll_area">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <property name="maximumSize">
        <size>
         <width>370</width>
@@ -80,7 +86,7 @@
        </size>
       </property>
       <property name="styleSheet">
-       <string notr="true">QScrollArea{border:0px}QScrollBar:vertical{background:#353535;width:5px}QScrollBar::handle:vertical{background:#2C53A1;min-width:20px;}QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical{background:#353535;}QScrollBar:horizontal{background:#353535;height:5px}QScrollBar::handle:horizontal{background:#2C53A1;min-width:20px;}QScrollBar::add-page:horizontal,QScrollBar::sub-page:horizontal{background:#353535;}</string>
+       <string notr="true"/>
       </property>
       <property name="frameShape">
        <enum>QFrame::NoFrame</enum>
@@ -103,7 +109,7 @@
          <x>0</x>
          <y>0</y>
          <width>370</width>
-         <height>692</height>
+         <height>700</height>
         </rect>
        </property>
        <layout class="QVBoxLayout" name="verticalLayout_6">
@@ -123,13 +129,13 @@
           </property>
          </widget>
         </item>
-        <item alignment="Qt::AlignTop">
+        <item>
          <widget class="QTabWidget" name="tabWidget">
           <property name="enabled">
            <bool>true</bool>
           </property>
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+           <sizepolicy hsizetype="Expanding" vsizetype="Minimum">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -137,7 +143,7 @@
           <property name="minimumSize">
            <size>
             <width>333</width>
-            <height>600</height>
+            <height>657</height>
            </size>
           </property>
           <property name="styleSheet">
@@ -161,8 +167,8 @@
              <rect>
               <x>10</x>
               <y>390</y>
-              <width>341</width>
-              <height>211</height>
+              <width>331</width>
+              <height>251</height>
              </rect>
             </property>
             <property name="styleSheet">
@@ -173,8 +179,8 @@
               <rect>
                <x>10</x>
                <y>20</y>
-               <width>311</width>
-               <height>161</height>
+               <width>321</width>
+               <height>151</height>
               </rect>
              </property>
              <layout class="QHBoxLayout" name="horizontalLayout_4">
@@ -302,8 +308,8 @@
             <property name="geometry">
              <rect>
               <x>20</x>
-              <y>20</y>
-              <width>331</width>
+              <y>10</y>
+              <width>321</width>
               <height>171</height>
              </rect>
             </property>
@@ -772,7 +778,7 @@
              <rect>
               <x>20</x>
               <y>200</y>
-              <width>331</width>
+              <width>321</width>
               <height>181</height>
              </rect>
             </property>
@@ -1468,8 +1474,8 @@
              <rect>
               <x>10</x>
               <y>30</y>
-              <width>311</width>
-              <height>571</height>
+              <width>341</width>
+              <height>611</height>
              </rect>
             </property>
             <property name="styleSheet">
@@ -1481,9 +1487,9 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
              <property name="geometry">
               <rect>
                <x>10</x>
-               <y>410</y>
-               <width>91</width>
-               <height>121</height>
+               <y>400</y>
+               <width>101</width>
+               <height>131</height>
               </rect>
              </property>
              <property name="text">
@@ -1502,9 +1508,9 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
             <widget class="QWidget" name="layoutWidget_2">
              <property name="geometry">
               <rect>
-               <x>0</x>
+               <x>10</x>
                <y>0</y>
-               <width>311</width>
+               <width>321</width>
                <height>291</height>
               </rect>
              </property>
@@ -1873,9 +1879,9 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
             <widget class="QWidget" name="layoutWidget_3">
              <property name="geometry">
               <rect>
-               <x>0</x>
+               <x>10</x>
                <y>300</y>
-               <width>311</width>
+               <width>321</width>
                <height>82</height>
               </rect>
              </property>
@@ -1958,7 +1964,7 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
             <widget class="QWidget" name="layoutWidget_4">
              <property name="geometry">
               <rect>
-               <x>110</x>
+               <x>130</x>
                <y>400</y>
                <width>201</width>
                <height>131</height>
@@ -2098,8 +2104,8 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
              <rect>
               <x>0</x>
               <y>10</y>
-              <width>351</width>
-              <height>601</height>
+              <width>361</width>
+              <height>631</height>
              </rect>
             </property>
             <property name="styleSheet">
@@ -2114,8 +2120,8 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
             <widget class="QLabel" name="label_41">
              <property name="geometry">
               <rect>
-               <x>25</x>
-               <y>90</y>
+               <x>50</x>
+               <y>80</y>
                <width>101</width>
                <height>16</height>
               </rect>
@@ -2130,8 +2136,8 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
             <widget class="QLabel" name="label_50">
              <property name="geometry">
               <rect>
-               <x>230</x>
-               <y>90</y>
+               <x>255</x>
+               <y>80</y>
                <width>51</width>
                <height>16</height>
               </rect>
@@ -2146,8 +2152,8 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
             <widget class="QLineEdit" name="command_answer_lineedit">
              <property name="geometry">
               <rect>
-               <x>220</x>
-               <y>110</y>
+               <x>245</x>
+               <y>100</y>
                <width>91</width>
                <height>21</height>
               </rect>
@@ -2168,8 +2174,8 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
             <widget class="QPushButton" name="command_send_button">
              <property name="geometry">
               <rect>
-               <x>140</x>
-               <y>110</y>
+               <x>165</x>
+               <y>100</y>
                <width>51</width>
                <height>21</height>
               </rect>
@@ -2190,8 +2196,8 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
             <widget class="QLineEdit" name="command_message_lineedit">
              <property name="geometry">
               <rect>
-               <x>40</x>
-               <y>110</y>
+               <x>65</x>
+               <y>100</y>
                <width>91</width>
                <height>21</height>
               </rect>
@@ -2200,17 +2206,20 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
               <string notr="true"/>
              </property>
              <property name="text">
-              <string notr="true">Type here</string>
+              <string notr="true"/>
              </property>
              <property name="alignment">
               <set>Qt::AlignCenter</set>
+             </property>
+             <property name="placeholderText">
+              <string>Type here</string>
              </property>
             </widget>
             <widget class="QLabel" name="label_1">
              <property name="geometry">
               <rect>
-               <x>20</x>
-               <y>110</y>
+               <x>45</x>
+               <y>100</y>
                <width>21</width>
                <height>21</height>
               </rect>
@@ -2225,8 +2234,8 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
             <widget class="QLabel" name="label_2">
              <property name="geometry">
               <rect>
-               <x>200</x>
-               <y>110</y>
+               <x>225</x>
+               <y>100</y>
                <width>21</width>
                <height>21</height>
               </rect>
@@ -2241,9 +2250,9 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
             <widget class="QWidget" name="layoutWidget_5">
              <property name="geometry">
               <rect>
-               <x>20</x>
-               <y>20</y>
-               <width>291</width>
+               <x>30</x>
+               <y>10</y>
+               <width>311</width>
                <height>61</height>
               </rect>
              </property>
@@ -2354,8 +2363,8 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
             <widget class="QWidget" name="layoutWidget_6">
              <property name="geometry">
               <rect>
-               <x>20</x>
-               <y>150</y>
+               <x>30</x>
+               <y>140</y>
                <width>311</width>
                <height>161</height>
               </rect>
@@ -2453,13 +2462,13 @@ p, li { white-space: pre-wrap; }
               </item>
              </layout>
             </widget>
-            <widget class="QWidget" name="layoutWidget_7">
+            <widget class="QWidget" name="layoutWidget">
              <property name="geometry">
               <rect>
-               <x>20</x>
-               <y>320</y>
-               <width>322</width>
-               <height>315</height>
+               <x>31</x>
+               <y>321</y>
+               <width>311</width>
+               <height>285</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="verticalLayout_3">
@@ -2476,8 +2485,8 @@ p, li { white-space: pre-wrap; }
                 </property>
                 <property name="minimumSize">
                  <size>
-                  <width>320</width>
-                  <height>290</height>
+                  <width>300</width>
+                  <height>221</height>
                  </size>
                 </property>
                 <property name="styleSheet">
@@ -2496,10 +2505,16 @@ p, li { white-space: pre-wrap; }
                 <item>
                  <widget class="QPushButton" name="continue_to_record_button">
                   <property name="sizePolicy">
-                   <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
                     <horstretch>0</horstretch>
                     <verstretch>0</verstretch>
                    </sizepolicy>
+                  </property>
+                  <property name="minimumSize">
+                   <size>
+                    <width>0</width>
+                    <height>45</height>
+                   </size>
                   </property>
                   <property name="cursor">
                    <cursorShape>PointingHandCursor</cursorShape>
@@ -2518,10 +2533,16 @@ p, li { white-space: pre-wrap; }
                 <item>
                  <widget class="QPushButton" name="cancel_advanced_button">
                   <property name="sizePolicy">
-                   <sizepolicy hsizetype="Minimum" vsizetype="Preferred">
+                   <sizepolicy hsizetype="Minimum" vsizetype="Maximum">
                     <horstretch>0</horstretch>
                     <verstretch>0</verstretch>
                    </sizepolicy>
+                  </property>
+                  <property name="minimumSize">
+                   <size>
+                    <width>0</width>
+                    <height>45</height>
+                   </size>
                   </property>
                   <property name="cursor">
                    <cursorShape>PointingHandCursor</cursorShape>

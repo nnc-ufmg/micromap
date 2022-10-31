@@ -8,9 +8,8 @@ from scipy.signal import correlate, correlation_lags, find_peaks
 from os import walk
 import mne
 
-file_nnc = "G:\\Outros computadores\\Desktop\\GitHub\\acquisition_system\\validation\\validation_data_27-10-2022\\validation_data_nnc_pc\\"
-file_open_ehpys = "G:\\Outros computadores\\Desktop\\GitHub\\acquisition_system\\validation\\validation_data_27-10-2022\\validation_data_openephys\\"
-
+file_nnc = "G:\\Outros computadores\\Desktop\\GitHub\\acquisition_system\\validation\\nnc_rpi_27-10-2022\\"
+file_open_ehpys = "G:\\Outros computadores\\Desktop\\GitHub\\acquisition_system\\validation\\openephys_27-10-2022\\"
 files_nnc = next(walk(file_nnc), (None, None, []))[2][:-1]
 files_nnc = [file_nnc + file for file in files_nnc]
 files_nnc = sorted(files_nnc)
@@ -20,6 +19,7 @@ files_open_ehpys = sorted(files_open_ehpys)
 
 class read_nnc():
     def __init__(self, file, file_number, num_channels, rate):
+        print(file[file_number])
         _file = open(file[file_number], "rb")
         _byte_data = _file.read()
         _byte_data = _byte_data[8:]
@@ -40,7 +40,7 @@ class read_nnc():
             self.data[_channel].append((_sample))                                       # Adds the values on the circular buffer
 
         self.data = numpy.array(self.data)
-        self.data = [a - numpy.mean(a) for a in self.data]
+        #self.data = [a - numpy.mean(a) for a in self.data]
         
         self.max_value = numpy.max(self.data)
         self.min_value = numpy.min(self.data)
@@ -155,13 +155,13 @@ class analysis():
         fig.tight_layout()
         plt.show()
 
-file_number = 10
+file_number = 6 
 open_ephys = read_openephys(files_open_ehpys, file_number)
 #open_ephys.bandpass_filter(0.1, 50)
 num_channels = open_ephys.channels
 sample_frequency = open_ephys.rate
 
-nnc = read_nnc(files_nnc, file_number-8, num_channels, sample_frequency)
+nnc = read_nnc(files_nnc, file_number, num_channels, sample_frequency)
 #nnc.bandpass_filter(0.1, 50)
 
 comparision = analysis(nnc, open_ephys)

@@ -103,6 +103,7 @@ class intan_rhd_chip_class
     uint16_t channel_count = 0;                                       // Variable to count the number off channels
     
     int serial_pinout = 9;                                            // Output pin for chip selection
+    int sync_pinout = 13;                                             // Output pin for syncronization trigger
     uint16_t buffer[32];                                              // Buffer to store data from a single run of all channels (only up to 32 channels at once)
     uint32_t packages_received = 0;                                   // Count total number of packages with channel DATA received from INTAN
     
@@ -129,8 +130,9 @@ class intan_rhd_chip_class
     void build_channel_sequence(uint32_t p_channels);                 // Declares function that builds the cahnnels sequence to data acquisition
 
     void read_registers(uint16_t *read_values, uint16_t *read_info);  // Declares function that reads all the configuration registers in RHD chip
-    void steup_spi(int p_serial_pinout);                              // Declares function that setups the RHD chip
-    void init_default(int p_serial_pinout, 
+    void steup_spi(int p_serial_pinout, int p_sync_pinout);           // Declares function that setups the RHD chip
+    void init_default(int p_serial_pinout,
+                      int p_sync_pinout, 
                       uint32_t p_channels, 
                       uint16_t p_sampling_frequency, 
                       uint16_t p_highpass_index, 
@@ -157,13 +159,13 @@ intan_rhd_chip_class::intan_rhd_chip_class()
 /*  INIT DEFAULT
  *  
  */
-void  intan_rhd_chip_class::init_default(int p_serial_pinout, uint32_t p_channels, uint16_t p_sampling_frequency, uint16_t p_highpass_index, double p_lowpass_index)
+void  intan_rhd_chip_class::init_default(int p_serial_pinout, int p_sync_pinout, uint32_t p_channels, uint16_t p_sampling_frequency, uint16_t p_highpass_index, double p_lowpass_index)
 { 
   build_channel_sequence(p_channels);  
 
   sampling_frequency = p_sampling_frequency;
     
-  steup_spi(p_serial_pinout); //Here p_serial_pinout is saved into INTAN_NNC SSpin variable ...
+  steup_spi(p_serial_pinout, p_sync_pinout); //Here p_serial_pinout is saved into INTAN_NNC SSpin variable ...
 
   write(0x0000, adc_reference_bw | amp_fast_settle_disable | amp_vref_enable | adc_comparator_bias | adc_comparator_select);
   write(0x0001, vdd_sense_disable | adc_buffer_bias_default);
@@ -333,7 +335,7 @@ void intan_rhd_chip_class::calibrate()
   }
 }
 
-/*  SET HIGH PASS FILTER CUTOFF FREQUENCY
+/*  SET LOW PASS FILTER CUTOFF FREQUENCY
  *       
  *  This function sets the cutoff frequency of the RHD on-chip highpass filter.
  *  
@@ -349,23 +351,23 @@ void intan_rhd_chip_class::calibrate()
  *  |  [8]  : 1000   |  [16] : 15000  |                |
  *  |________________|________________|________________|
  */
-    void intan_rhd_chip_class::set_highpass (uint16_t p_highpass_index)
+    void intan_rhd_chip_class::set_lowpass (uint16_t p_lowpass_index)
     {
-        float highpass_values[17]{100, 150, 200, 250, 300, 500, 750, 1000, 1500, 2000, 
+        float lowpass_values[17]{100, 150, 200, 250, 300, 500, 750, 1000, 1500, 2000, 
                                   2500, 3000, 5000, 7500, 10000, 15000, 20000};
-        highpass_frequency = highpass_values[p_highpass_index];
+        lowpass_frequency = lowpass_values[p_lowpass_index];
         
-        int highpass_registers[17][4]{{38,26, 5,31}, {44,17, 8,21}, {24,13, 7,16}, {42,10, 5,13},
+        int lowpass_registers[17][4]{{38,26, 5,31}, {44,17, 8,21}, {24,13, 7,16}, {42,10, 5,13},
                                       { 6, 9, 2,11}, {30, 5,43, 6}, {41, 3,36, 4}, {46, 2,30, 3},
                                       { 1, 2,23, 2}, {27, 1,44, 1}, {13, 1,25, 1}, { 3, 1,13, 1},
                                       {33, 0,37, 0}, {22, 0,23, 0}, {17, 0,16, 0}, {11, 0, 8, 0},
                                       { 8, 0, 4, 0}};
 
         uint8_t RH1DAC1 = 0, RH1DAC2 = 0, RH2DAC1 = 0, RH2DAC2 = 0;
-        RH1DAC1 = highpass_registers[p_highpass_index][0];
-        RH1DAC2 = highpass_registers[p_highpass_index][1];
-        RH2DAC1 = highpass_registers[p_highpass_index][2];
-        RH2DAC2 = highpass_registers[p_highpass_index][3];
+        RH1DAC1 = lowpass_registers[p_lowpass_index][0];
+        RH1DAC2 = lowpass_registers[p_lowpass_index][1];
+        RH2DAC1 = lowpass_registers[p_lowpass_index][2];
+        RH2DAC2 = lowpass_registers[p_lowpass_index][3];
         
         write(0x0008, RH1DAC1); // writes RH1DAC1 on register 8 of INTAN RHD.
         write(0x0009, RH1DAC2); // writes RH1DAC2 on register 9 of INTAN RHD.
@@ -373,7 +375,7 @@ void intan_rhd_chip_class::calibrate()
         write(0x000B, RH2DAC2); // writes RH2DAC2 on register 11 of INTAN RHD.
     }
 
-/*  SET LOW PASS FILTER CUTOFF FREQUENCY
+/*  SET HIGH PASS FILTER CUTOFF FREQUENCY
  * 
  *  This function sets the cutoff frequency of the RHD on-chip lowpass filter.
  *   
@@ -390,14 +392,14 @@ void intan_rhd_chip_class::calibrate()
  *  |  [8] : 2     |  [16] : 25   |  [24] : 300  |              | 
  *  |______________|______________|______________|______________|
  */
-    void intan_rhd_chip_class::set_lowpass(uint16_t p_lowpass_index)
+    void intan_rhd_chip_class::set_highpass(uint16_t p_highpass_index)
     { 
-        float lowpass_values[25]{0.1, 0.25, 0.3, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 5,
+        float highpass_values[25]{0.1, 0.25, 0.3, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 5,
                                  7.5, 10, 15, 20, 25, 30, 50, 75, 100, 150, 200,
                                  250, 300, 500};
-        lowpass_frequency = lowpass_values[p_lowpass_index];
+        highpass_frequency = highpass_values[p_highpass_index];
                
-        int lowpass_registers[25][3]{{16,60, 1}, {56,54, 0}, { 1,40, 0}, {35,17, 0},
+        int highpass_registers[25][3]{{16,60, 1}, {56,54, 0}, { 1,40, 0}, {35,17, 0},
                                      {49, 9, 0}, {44, 6, 0}, { 9, 4, 0}, { 8, 3, 0},
                                      {42, 2, 0}, {20, 0, 0}, {40, 1, 0}, {18, 1, 0},
                                      { 5, 1, 0}, {62, 0, 0}, {54, 0, 0}, {48, 0, 0},
@@ -406,9 +408,9 @@ void intan_rhd_chip_class::calibrate()
                                      {13, 0, 0}};
 
         uint8_t RLDAC1=0, RLDAC2=0, RLDAC3=0;
-        RLDAC1 = lowpass_registers[p_lowpass_index][0];
-        RLDAC2 = lowpass_registers[p_lowpass_index][1];
-        RLDAC3 = lowpass_registers[p_lowpass_index][2];
+        RLDAC1 = highpass_registers[p_highpass_index][0];
+        RLDAC2 = highpass_registers[p_highpass_index][1];
+        RLDAC3 = highpass_registers[p_highpass_index][2];
         
         write(0x000C, RLDAC1); // writes RLDAC1 on register 12 of INTAN RHD.
         write(0x000D, RLDAC2 | (RLDAC3 << 6)); // writes RLDAC2 and RLDAC3 on register 13 of INTAN RHD.
@@ -494,10 +496,12 @@ void intan_rhd_chip_class::read_registers(uint16_t *read_values, uint16_t *read_
  * 
  *  This function initializes the SPI bus
  */     
-void intan_rhd_chip_class::steup_spi(int p_serial_pinout)
+void intan_rhd_chip_class::steup_spi(int p_serial_pinout, int p_sync_pinout)
 {
   serial_pinout = p_serial_pinout;                                // Serial pin             
+  sync_pinout = p_sync_pinout;
   pinMode(serial_pinout, OUTPUT);                                 // Defines the pin mode
+  pinMode(sync_pinout, OUTPUT);                                   // Defines the pin mode
   SPI.begin();                                                    // Starts the SPI bus   
 
   REG_SPI0_CR = SPI_CR_SWRST;                                     // Resets SPI
@@ -564,6 +568,7 @@ void intan_rhd_chip_class::treat_command(byte *command_buffer)
      *  and returns "OK"
      */
     case 0x11:
+        digital_write_direct(sync_pinout, HIGH);
         start_acquisition(sampling_frequency);              // Starts the data acquisition
         command_buffer[3] = 'K';                            // Sets the byte to answer to interface the ascii ("OK")
         command_buffer[2] = 'O';                            // Sets the byte to answer to interface the ascii ("OK")
@@ -573,6 +578,7 @@ void intan_rhd_chip_class::treat_command(byte *command_buffer)
      *  This function stops the sequencial acquisition and returns "OK"
      */
     case 0xFF:
+      digital_write_direct(sync_pinout, LOW);
       stop_acquisition();                                   // Stops the data aquisition
       command_buffer[3] = 'K';                              // Sets the byte to answer to interface the ascii ("OK")
       command_buffer[2] = 'O';                              // Sets the byte to answer to interface the ascii ("OK")

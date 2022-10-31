@@ -1,2 +1,0 @@
-Software Time (milliseconds since midnight Jan 1st 1970 UTC): 1665169730301
-Start Time for Acquisition Board (119) - Rhythm Data @ 2000 Hz: 0

@@ -1,0 +1,169 @@
+{
+    "GUI version": "0.6.1",
+    "continuous": [
+      {
+        "folder_name": "Acquisition_Board-109.Rhythm Data/",
+        "sample_rate": 2000.0,
+        "source_processor_name": "Acquisition Board",
+        "source_processor_id": 109,
+        "stream_name": "Rhythm Data",
+        "recorded_processor": "Record Node",
+        "recorded_processor_id": 115,
+        "num_channels": 16,
+        "channels": [
+          {
+            "channel_name": "CH1",
+            "description": "Headstage channel from a Rhythm FPGA device",
+            "identifier": "",
+            "history": "Acquisition Board -> LFP Viewer -> Channel Map -> Record Node",
+            "bit_volts": 0.1949999928474426,
+            "units": "uV"
+          },
+          {
+            "channel_name": "CH2",
+            "description": "Headstage channel from a Rhythm FPGA device",
+            "identifier": "",
+            "history": "Acquisition Board -> LFP Viewer -> Channel Map -> Record Node",
+            "bit_volts": 0.1949999928474426,
+            "units": "uV"
+          },
+          {
+            "channel_name": "CH3",
+            "description": "Headstage channel from a Rhythm FPGA device",
+            "identifier": "",
+            "history": "Acquisition Board -> LFP Viewer -> Channel Map -> Record Node",
+            "bit_volts": 0.1949999928474426,
+            "units": "uV"
+          },
+          {
+            "channel_name": "CH4",
+            "description": "Headstage channel from a Rhythm FPGA device",
+            "identifier": "",
+            "history": "Acquisition Board -> LFP Viewer -> Channel Map -> Record Node",
+            "bit_volts": 0.1949999928474426,
+            "units": "uV"
+          },
+          {
+            "channel_name": "CH5",
+            "description": "Headstage channel from a Rhythm FPGA device",
+            "identifier": "",
+            "history": "Acquisition Board -> LFP Viewer -> Channel Map -> Record Node",
+            "bit_volts": 0.1949999928474426,
+            "units": "uV"
+          },
+          {
+            "channel_name": "CH6",
+            "description": "Headstage channel from a Rhythm FPGA device",
+            "identifier": "",
+            "history": "Acquisition Board -> LFP Viewer -> Channel Map -> Record Node",
+            "bit_volts": 0.1949999928474426,
+            "units": "uV"
+          },
+          {
+            "channel_name": "CH7",
+            "description": "Headstage channel from a Rhythm FPGA device",
+            "identifier": "",
+            "history": "Acquisition Board -> LFP Viewer -> Channel Map -> Record Node",
+            "bit_volts": 0.1949999928474426,
+            "units": "uV"
+          },
+          {
+            "channel_name": "CH8",
+            "description": "Headstage channel from a Rhythm FPGA device",
+            "identifier": "",
+            "history": "Acquisition Board -> LFP Viewer -> Channel Map -> Record Node",
+            "bit_volts": 0.1949999928474426,
+            "units": "uV"
+          },
+          {
+            "channel_name": "CH9",
+            "description": "Headstage channel from a Rhythm FPGA device",
+            "identifier": "",
+            "history": "Acquisition Board -> LFP Viewer -> Channel Map -> Record Node",
+            "bit_volts": 0.1949999928474426,
+            "units": "uV"
+          },
+          {
+            "channel_name": "CH10",
+            "description": "Headstage channel from a Rhythm FPGA device",
+            "identifier": "",
+            "history": "Acquisition Board -> LFP Viewer -> Channel Map -> Record Node",
+            "bit_volts": 0.1949999928474426,
+            "units": "uV"
+          },
+          {
+            "channel_name": "CH11",
+            "description": "Headstage channel from a Rhythm FPGA device",
+            "identifier": "",
+            "history": "Acquisition Board -> LFP Viewer -> Channel Map -> Record Node",
+            "bit_volts": 0.1949999928474426,
+            "units": "uV"
+          },
+          {
+            "channel_name": "CH12",
+            "description": "Headstage channel from a Rhythm FPGA device",
+            "identifier": "",
+            "history": "Acquisition Board -> LFP Viewer -> Channel Map -> Record Node",
+            "bit_volts": 0.1949999928474426,
+            "units": "uV"
+          },
+          {
+            "channel_name": "CH13",
+            "description": "Headstage channel from a Rhythm FPGA device",
+            "identifier": "",
+            "history": "Acquisition Board -> LFP Viewer -> Channel Map -> Record Node",
+            "bit_volts": 0.1949999928474426,
+            "units": "uV"
+          },
+          {
+            "channel_name": "CH14",
+            "description": "Headstage channel from a Rhythm FPGA device",
+            "identifier": "",
+            "history": "Acquisition Board -> LFP Viewer -> Channel Map -> Record Node",
+            "bit_volts": 0.1949999928474426,
+            "units": "uV"
+          },
+          {
+            "channel_name": "CH15",
+            "description": "Headstage channel from a Rhythm FPGA device",
+            "identifier": "",
+            "history": "Acquisition Board -> LFP Viewer -> Channel Map -> Record Node",
+            "bit_volts": 0.1949999928474426,
+            "units": "uV"
+          },
+          {
+            "channel_name": "CH16",
+            "description": "Headstage channel from a Rhythm FPGA device",
+            "identifier": "",
+            "history": "Acquisition Board -> LFP Viewer -> Channel Map -> Record Node",
+            "bit_volts": 0.1949999928474426,
+            "units": "uV"
+          }
+        ]
+      }
+    ],
+    "events": [
+      {
+        "folder_name": "Acquisition_Board-109.Rhythm Data/TTL/",
+        "channel_name": "Rhythm FPGA TTL Input",
+        "description": "Events on digital input lines of a Rhythm FPGA device",
+        "identifier": "rhythm-fpga-device.events",
+        "sample_rate": 2000.0,
+        "type": "int16",
+        "source_processor": "Acquisition Board",
+        "stream_name": "Rhythm Data",
+        "initial_state": 0
+      },
+      {
+        "folder_name": "MessageCenter/",
+        "channel_name": "Messages",
+        "description": "Broadcasts messages from the MessageCenter",
+        "identifier": "messagecenter.events",
+        "sample_rate": 2000.0,
+        "type": "string",
+        "source_processor": "Message Center",
+        "stream_name": "Rhythm Data"
+      }
+    ],
+    "spikes": []
+  }

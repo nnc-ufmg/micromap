@@ -1,21 +1,26 @@
 import struct
-import collections
 import numpy
 import matplotlib.pyplot as plt
 import Binary
 from itertools import cycle
-from scipy.signal import correlate, correlation_lags, find_peaks
+from scipy.signal import correlate, correlation_lags, find_peaks, resample
 from os import walk
+from open_ephys.analysis import Session
 import mne
 
-file_nnc = "G:\\Outros computadores\\Desktop\\GitHub\\acquisition_system\\validation\\nnc_rpi_27-10-2022\\"
+file_pc = "G:\\Outros computadores\\Desktop\\GitHub\\acquisition_system\\validation\\daq_pc_27-10-2022\\"
+file_rpi = "G:\\Outros computadores\\Desktop\\GitHub\\acquisition_system\\validation\\nnc_rpi_27-10-2022\\"
 file_open_ehpys = "G:\\Outros computadores\\Desktop\\GitHub\\acquisition_system\\validation\\openephys_27-10-2022\\"
-files_nnc = next(walk(file_nnc), (None, None, []))[2][:-1]
-files_nnc = [file_nnc + file for file in files_nnc]
-files_nnc = sorted(files_nnc)
-files_open_ehpys = next(walk(file_open_ehpys), (None, [], None))[1]
-files_open_ehpys = [file_open_ehpys + file + "\\Record Node 115" for file in files_open_ehpys]
-files_open_ehpys = sorted(files_open_ehpys)
+
+files_pc = next(walk(file_pc), (None, None, []))[2]
+files_pc = [file_pc + file for file in files_pc]
+files_pc = sorted(files_pc)
+files_rpi = next(walk(file_rpi), (None, None, []))[2]
+files_rpi = [file_rpi + file for file in files_rpi]
+files_rpi = sorted(files_rpi)
+files_openehpys = next(walk(file_open_ehpys), (None, [], None))[1]
+files_openehpys = [file_open_ehpys + file + "\\Record Node 115" for file in files_openehpys]
+files_openehpys = sorted(files_openehpys)
 
 class read_nnc():
     def __init__(self, file, file_number, num_channels, rate):
@@ -40,7 +45,7 @@ class read_nnc():
             self.data[_channel].append((_sample))                                       # Adds the values on the circular buffer
 
         self.data = numpy.array(self.data)
-        #self.data = [a - numpy.mean(a) for a in self.data]
+        self.data = [a - numpy.mean(a) for a in self.data]
         
         self.max_value = numpy.max(self.data)
         self.min_value = numpy.min(self.data)
@@ -54,6 +59,41 @@ class read_nnc():
         for a in range(0, len(self.data)):
             self.data[a] = mne.filter.filter_data(self.data[a], self.rate, low, high, method='iir')
 
+    def resample(self, new_rate):
+        self.data = resample(self.data, int(len(self.data[0])/(self.rate/new_rate)), axis=1)
+        self.rate = new_rate
+
+# class read_openephys_0():
+#     def __init__(self, file, file_number):
+#         print(file[file_number])
+        
+#         session = Session(file[file_number])
+#         recordings = session.recordings[0]
+#         continuous = recordings.continuous[0]
+#         num_samples = continuous.sample_numbers[-1]
+
+#         events = recordings.events
+#         init_time = list(events['sample_number'])[-2]
+#         end_time = list(events['sample_number'])[-1]
+#         _data = continuous.get_samples(start_sample_index=init_time, end_sample_index=end_time)      
+                
+#         self.data = _data.transpose()
+#         #self.data = [a - numpy.mean(a) for a in self.data]
+#         self.rate = continuous.metadata['sample_rate']
+#         self.samples = len(self.data[0])
+#         self.channels = continuous.metadata['num_channels']
+#         self.max_value = numpy.max(self.data)
+#         self.min_value = numpy.min(self.data)
+
+#     def notch_filter(self, frequencies):
+#         frequencies = numpy.array(frequencies)
+#         for a in range(0, len(self.data)):
+#             self.data[a] = mne.filter.notch_filter(self.data[a], self.rate, frequencies)
+
+#     def bandpass_filter(self, low, high):
+#         for a in range(0, len(self.data)):
+#             self.data[a] = mne.filter.filter_data(self.data[a], self.rate, low, high, method='iir')
+
 class read_openephys():
     def __init__(self, file, file_number):
         print(file[file_number])
@@ -66,6 +106,7 @@ class read_openephys():
         
         self.data = _data.transpose()
         self.data = self.data.astype('float64')
+        self.data = [a - numpy.mean(a) for a in self.data]
         self.rate = _rate
         self.samples = len(self.data[0])
         self.channels = len(self.data)
@@ -82,20 +123,27 @@ class read_openephys():
             self.data[a] = mne.filter.filter_data(self.data[a], self.rate, low, high, method='iir')
 
 class analysis():
-    def __init__(self, nnc, open_ephys):
+    def __init__(self, nnc, open_ephys, experiment_name):
         self.nnc_data = nnc.data
         self.openephys_data = open_ephys.data
+        self.experiment_name = experiment_name
         self.num_channels = len(self.nnc_data)
         self.min_value = min(nnc.min_value.all(), open_ephys.min_value.all())
         self.max_value = max(nnc.max_value.all(), open_ephys.max_value.all())
 
-    def plot_all(self):
-        plt.figure()                                                                                            # Clears the last plot made in the interface
-        for a in range(0, self.num_channels):                                                                   # Loop through all the rows of the matrix
-            plt.subplot(self.num_channels//2 + 1, 2, a + 1)    
-            #plt.ylim((self.min_value, self.max_value))
-            plt.plot(self.nnc_data[a], color = (160/255, 17/255, 8/255, 1), linewidth = 0.5)                    # Plots the respective data and for each channel add the channel number for better visualization of the data                                                      # Draws on the interface
-            plt.plot(self.openephys_data[a], color = (75/255, 75/255, 75/255, 1), linewidth = 0.5)
+    def plot_all(self):                                                                                             # Clears the last plot made in the interface
+        fig, ax_0 = plt.subplots(self.num_channels//2 + self.num_channels%2, 2, sharex=True, sharey=True)
+        ax = ax_0.flatten()
+        for a in range(0, self.num_channels):                                                                     # Loop through all the rows of the matrix
+            #ax[a].ylim((self.min_value, self.max_value))
+            ax[a].plot(self.nnc_data[a], color = (160/255, 17/255, 8/255, 1), linewidth = 0.5)                      # Plots the respective data and for each channel add the channel number for better visualization of the data                                                      # Draws on the interface
+            ax[a].plot(self.openephys_data[a], color = (75/255, 75/255, 75/255, 1), linewidth = 0.5)
+            ax[a].set_ylabel(str(a+1))
+            if a >= self.num_channels - 1:
+                ax[a].set_xlabel("Samples")
+
+        plt.suptitle(self.experiment_name + " (in uV)")
+        plt.tight_layout()
         plt.show()
 
     def correlaction(self, channel):
@@ -105,7 +153,7 @@ class analysis():
 
         fig, (ax_nnc, ax_ope, ax_corr) = plt.subplots(3, 1, figsize=(4.8, 4.8))
         ax_nnc.plot(self.nnc_data[0][:4000])
-        ax_nnc.set_title('NNC DAQ')
+        ax_nnc.set_title(self.experiment_name + '\n\n' + 'NNC DAQ')
         ax_nnc.set_xlabel('Sample Number')
         ax_nnc.set_ylabel('uV')
         ax_ope.plot(self.openephys_data[0][:4000])
@@ -118,11 +166,13 @@ class analysis():
         ax_nnc.margins(0, 0.1)
         ax_ope.margins(0, 0.1)
         ax_corr.margins(0, 0.1)
-        fig.tight_layout()
+        
+        plt.tight_layout()
         plt.show()
 
     def psd(self):
         plt.psd(nnc.data[0], NFFT=None, Fs=2000, Fc=None, detrend=None, window=None, noverlap=100, pad_to=None, sides=None, scale_by_freq=None, return_line=None)
+        plt.title(self.experiment_name)
         plt.show()
 
     def average_window(self):
@@ -152,27 +202,40 @@ class analysis():
         ax.margins(0, 0.1)
         ax.margins(0, 0.1)
         ax.legend(['NNC DAQ','Open Ephys'])
+        plt.title(self.experiment_name)
         fig.tight_layout()
         plt.show()
 
-file_number = 6 
-open_ephys = read_openephys(files_open_ehpys, file_number)
+file_number = 0  
+
+open_ephys = read_openephys(files_openehpys, file_number)
+
 #open_ephys.bandpass_filter(0.1, 50)
 num_channels = open_ephys.channels
 sample_frequency = open_ephys.rate
 
-nnc = read_nnc(files_nnc, file_number, num_channels, sample_frequency)
-#nnc.bandpass_filter(0.1, 50)
+if file_number <= 7:
+    nnc = read_nnc(files_rpi, file_number, num_channels, sample_frequency)
+    #nnc.bandpass_filter(0.1, 50)
+    if file_number >= 4:
+        nnc.rate = 2000
+        nnc.resample(1000)
+    experiment_name = files_rpi[file_number].rsplit('\\', 1)[1].rsplit('.', 1)[0]
+    experiment_name = experiment_name.replace('_', ' ')
+    experiment_name = experiment_name.upper()
+else:
+    nnc = read_nnc(files_pc, file_number - 8, num_channels, sample_frequency)
+    #nnc.bandpass_filter(0.1, 50)
+    if file_number == 11:
+        nnc.rate = 2000
+        nnc.resample(1000)
+    experiment_name = files_pc[file_number - 8].rsplit('\\', 1)[1].rsplit('.', 1)[0]
+    experiment_name = experiment_name.replace('_', ' ')
+    experiment_name = experiment_name.upper()
 
-comparision = analysis(nnc, open_ephys)
+comparision = analysis(nnc, open_ephys, experiment_name)
 comparision.plot_all()
-comparision.correlaction(1)
+comparision.correlaction(0)
 comparision.average_window()
-
-# plt.figure()                                                                                            # Clears the last plot made in the interface
-# for a in range(0, num_channels):                                                                   # Loop through all the rows of the matrix
-#     plt.subplot(num_channels//2 + 1, 2, a + 1)    
-#     plt.plot(nnc.data[a], color = (160/255, 17/255, 8/255, 1), linewidth = 0.5)                    # Plots the respective data and for each channel add the channel number for better visualization of the data                                                      # Draws on the interface
-# plt.show()
 
 pass

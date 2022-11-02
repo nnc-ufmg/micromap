@@ -1,25 +1,35 @@
 clc 
 clear
 
-file = fopen('Eletrocardio_Flavio','r');
+file = fopen("G:\Outros computadores\Desktop\GitHub\acquisition_system\validation\nnc_rpi_27-10-2022\ecg_1000_1-5ch_1min.bin",'r');
 %fseek(file, -12800000000, "eof");
 data_raw = fread(file, 'integer*2=>signed', 'ieee-le');
 %data_char = fread(file, 'char', 'ieee-be');
 fclose(file);
 
-data = reshape(data_raw, 32, []);
+data = reshape(data_raw, 5, []);
 
 data = 0.195*data;
 
-data_14 = data(16,:);
+figure(1)
+for a = 1:5
+    subplot(3,2, a)
+    plot(data(a,:))
+    ylim([-1000, 1000])
+end
+hold on
 
-data_d = detrend(data_14, "constant");
+% figure(2)
+% for a = 17:32
+%     subplot(8,2, a-16)
+%     plot(data(a,:))
+%     ylim([-35000, 35000])
+% end
+% hold on
 
-data_filtered = lowpass(data_d, 40, 2000);
-
+%data_d = detrend(data_14, "constant");
+%data_filtered = lowpass(data_d, 40, 2000);
 %data_f = lowpass(data(5,:), 10, 1000);
-
-
 
 % rng default
 % 
@@ -33,20 +43,3 @@ data_filtered = lowpass(data_d, 40, 2000);
 % xlabel('Frequency (Hz)')
 % ylabel('PSD (dB/Hz)')
 
-
-
-% figure(1)
-% for a = 1:16
-%     subplot(8,2, a)
-%     plot(data(a,:))
-%     ylim([-35000, 35000])
-% end
-% hold on
-% 
-% figure(2)
-% for a = 17:32
-%     subplot(8,2, a-16)
-%     plot(data(a,:))
-%     ylim([-35000, 35000])
-% end
-% hold on

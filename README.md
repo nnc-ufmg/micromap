@@ -1,19 +1,32 @@
-# Acquisition System
+MicroMAP: Low cost, high performance package for electrophysiological recording
+===============================================================================
+<div align="center">
+    <img
+     src="docs/source/img/logo_colored.png"
+     style="max-width: 50%; height: 50%;"
+     alt="MicroMAP software"
 
-## Raspberry Pi VNC Configuration
-- Install the Raspberry Pi OS on your Raspberry Pi
-- Open the *Raspbperry Pi Configurations* in *Applications Menu*
-- Go to *Interfaces* tab and turns on the VNC
-- Go to *Display* tab and sets the *Headlesss Resolution* to maximum value (1920x1080)
-- On the task bar right side a VNC symbol will appear
-- Click on it and gets the IP on left side of the window (ex. 192.168.1.222)
-- Install and open the *VNC Viewer* on another computer (https://www.realvnc.com/pt/connect/download/viewer/)
-- Open the *VNC Viewer*, click in *file* tab and after, in *new connection* 
-- Put the Raspberry Pi VNC IP on *VNC Server* item and complete with the login
-- Turns on the Raspberry Pi and connect with VNC Viewer to acess remotely
+</div>
 
-## Install Libraries
-- Open the Raspberry Pi terminal
-- Runs in terminal: sudo apt-get install python3-matplotlib
-- Runs in terminal: sudo apt-get install python3-pyqt5
-- 
+<br/>
+<br/>
+
+* **About**
+
+**MicroMAP** is a Python based electrophysiological aquisition system that combines the
+portability of the raspberry pi and the versatility of the intan chip to harness the powerful 
+combination of open source hardware and software to create a low cost, high performance package
+for electrophysiological recording.
+
+* **Getting started**
+
+To get started, please see the installation page in the documentation. There you will find instructions on how to install MicroMAP on your raspberry pi and how to get started with the software.
+
+* **Documentation**
+
+_Online link coming soon_
+
+<br/>
+
+_**Note**_
+- _This project is currently in its working beta phase._

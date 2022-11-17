@@ -1,0 +1,8 @@
+include src/micromap/case_model/*.skp
+include src/micromap/case_model/*.skb
+include src/micromap/microcontroller/*.cpp
+include src/micromap/microcontroller/*.h
+include src/micromap/microcontroller/*.ino
+include src/micromap/interface/*.ui
+include src/micromap/docs/source/img/*.png
+include src/micromap/interface/icon/*.png

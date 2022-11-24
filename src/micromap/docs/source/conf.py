@@ -18,4 +18,4 @@ extensions = [
 # -- Options for HTML output
 
 html_theme = 'sphinx_rtd_theme'
-html_logo = 'img/logo_colored.png'
+html_logo = 'img/logo.png'

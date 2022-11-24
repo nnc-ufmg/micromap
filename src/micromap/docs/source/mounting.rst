@@ -1,5 +1,5 @@
 Mounting
-============
+========
 
 This tutorial will describe the complete process of making a MicroMAP 
 system from assembling the housing to the connections for making registers:
@@ -11,12 +11,12 @@ system from assembling the housing to the connections for making registers:
 5. Connecting the system to the analog-to-digital converter
 
 Shopping List
-------------------------------
+-------------
 
 - Arduino Due
-- Raspberry Pi (opitional)
-- 3D printer filament (opitional)
-- Cooler 30x30mm (opitional)
+- Raspberry Pi (optional)
+- 3D printer filament (optional)
+- Cooler 30x30mm (optional)
 - Jumpers
 - Chip Intan RHD Family
 - Intan RHD PCB board
@@ -24,7 +24,7 @@ Shopping List
 - Flat conector
 
 Building the case on a 3D printer
-------------------------------
+---------------------------------
 
 - Open the *Raspbperry Pi Configurations* in *Applications Menu*
 - Go to *Interfaces* tab and turns on the VNC
@@ -41,7 +41,7 @@ Installing dependecies
 
 - Open a terminal inside the Raspberry Pi
 - Install the libraries with the command:
-x
+
 .. code-block:: bash
 
   $ pip install -r requirements.txt

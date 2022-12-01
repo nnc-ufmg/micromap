@@ -37,10 +37,10 @@ import serial.tools.list_ports
 import time
 import struct
 import collections
-import micromap.interface.interface_functions as interface_functions
+import micromap.interface.interface_functions as interface_functions    
 import os
 from datetime import datetime, timedelta
-from PyQt5 import QtWidgets, uic
+from PyQt5 import QtWidgets, uic    
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, QCoreApplication, QTimer
 from PyQt5.QtWidgets import QMessageBox, QMainWindow
 from tkinter import Tk 
@@ -53,22 +53,31 @@ import pyqtgraph
 #%% PLOT DATA CLASS
 
 class plot_data_class(QObject):
-    ''' 
+    '''Plot data class 
+    
     This class is a worker that will be inserted into a Thread. The functions of this class 
     aim to make the interface graphics and have two main features, one for real-time plots 
     and another for plots executed by interface buttons.
     
-    Parameters:
-        - file ........... Open file in which the records are being saved
-        - option ......... The option dictionary that contains all record configurations
-        - plot_viewer .... Is the object that represents the plot viewer in the interface
+    Attributes:
+        file: Open file in which the records are being saved.
+        option: The option dictionary that contains all record configurations.
+        plot_viewer: Is the object that represents the plot viewer in the interface.
+        
     '''
     finished = pyqtSignal()                                                                         # Signal that will be output to the interface when the function is complited
     
     def __init__(self, plot_viewer, options, buffer):                                               # Initializes when the thread is started
-        ''' 
+        '''__INIT__ 
+        
         This private function is executed when the class is called, and all parameters are
         defined here
+        
+        Args: 
+            plot_viewer: Is the object that represents the plot viewer in the interface.
+            options: The option dictionary that contains all record configurations.
+            buffer: It is the buffer where the data of the last second of the acquisition is stored.
+        
         '''
         super(plot_data_class, self).__init__()                                                                             # Super declaration
         self.plot_viewer = plot_viewer                                                                                      # Sets the the interface plot widget as self variable
@@ -90,7 +99,8 @@ class plot_data_class(QObject):
         self.setup_plot()
                                 
     def plot(self):
-        '''
+        '''Plot
+        
         This public function will plot the last 4 seconds of record on the interface in real 
         time, updating the values every second
         '''
@@ -103,7 +113,8 @@ class plot_data_class(QObject):
             self.lines[channel].setData(self.time_in_seconds,self.data_matrix[channel])                                     # Plots the respective data with set_ydata (this function only changes the data without changes the axes configurations)
         
     def clear_plot(self):
-        '''
+        '''Clear plot
+        
         This public function resets the plot to initial configurations
         '''
         self.plot_viewer.clear()
@@ -118,7 +129,8 @@ class plot_data_class(QObject):
             self.lines.append(self.plot_viewer.plot(self.time_in_seconds, self.data_matrix[i], pen = self.plot_pen))        # Plots lines in interface
         
     def finish_plot(self):
-        '''
+        '''Finish plot
+        
         This public function will emit the command to finish the thread 
         '''
         self.finished.emit()                                                                                                # Emits the finish signal to closes the thread
@@ -126,22 +138,30 @@ class plot_data_class(QObject):
 #%% RECEIVE DATA CLASS
     
 class receive_data_class(QObject):
-    ''' 
+    ''' Receive data class
+    
     This class is a worker that will be inserted into a Thread. The functions of this class
     are the most important for the operation of the interface system, they are where the 
     interface will connect to the arduino and read the data sent via UART.
     
-    Parameters:
-        - file ........... Open file in which the records are being saved
-        - option ......... The option dictionary that contains all record configurations
+    Attributes:
+        file: Open file in which the records are being saved.
+        option: The option dictionary that contains all record configurations.
+        
     '''
     finished = pyqtSignal()                                                                                     # Signal that will be output to the interface when the function is complited
     progress = pyqtSignal()                                                                                     # Signal that will be output to the interface to reposrt the progress of the data acquisition 
     
     def __init__(self, plot_viewer, options):
-        ''' 
+        ''' __init__
+        
         This private function is executed when the class is called, and all parameters are 
         defined here
+        
+        Args:
+            plot_viewer: Is the object that represents the plot viewer in the interface.
+            options: The option dictionary that contains all record configurations.
+            
         '''
         super(receive_data_class, self).__init__()                                                              # Super declaration
         self.plot_viewer = plot_viewer                                                                          # Sets the the interface plot widget as self variable
@@ -172,7 +192,8 @@ class receive_data_class(QObject):
         self.usb.connect()                                                                                      # Connect the USB port
         
     def run_view(self):
-        '''
+        '''Run_viewer
+        
         This public function will read the data being sent by the USB acquisition system when
         recording mode is active. The difference from the previous one is that with each sample, 
         a progress signal will be sent to the interface (this operation decreases the progress 
@@ -199,7 +220,8 @@ class receive_data_class(QObject):
         self.finished.emit()                                                                                    # Emits the finish signal    
                 
     def run_recording(self):
-        '''
+        '''Run_recording
+        
         This public function will read the data being sent by the USB acquisition system when 
         recording mode is active. This is the most simple and faster function to read UART 
         datas.  
@@ -247,7 +269,8 @@ class receive_data_class(QObject):
         self.usb.stop_acquisition()                                                                             # Command to stop the data acquisition                                                      
 
     def finish_record(self):
-        '''
+        '''Finish record
+        
         This public function will break the while loop causing the finish signal to be emitted
         '''
         self._is_running = False                                                                                # Signal that breaks the while loop
@@ -255,7 +278,8 @@ class receive_data_class(QObject):
 #%% INTERFACE CLASS
 
 class interface_visual_gui(QMainWindow):
-    '''
+    '''Interface visual gui
+    
     This class contains all the commands of the interface as well as the constructors of the 
     interface itself.
     '''
@@ -263,7 +287,8 @@ class interface_visual_gui(QMainWindow):
 #%% CONNECTION AND INITIALIZATION FUNCTIONS
     
     def __init__(self):
-        '''
+        '''__init__
+        
         This private function calls the interface of a .ui file created in Qt Designer, starts 
         the dictionaries that contain the desired settings for the registry, and makes the 
         connections between the user's activities and their respective functions.
@@ -307,7 +332,8 @@ class interface_visual_gui(QMainWindow):
         
     # Function to set the data aquisition system
     def method_function(self):
-        '''
+        '''Method function
+        
         This public function is called when the acquisition method is changed by the user.
         '''
         method = self.method_combobox.currentIndex()                                                             # Gets the combo box index
@@ -324,7 +350,8 @@ class interface_visual_gui(QMainWindow):
     
     # Function to set what chip will be used
     def chip_function(self):
-        '''
+        '''Chip function
+        
         This public function is called when the acquisition chip is changed by the user.
         '''
         chip = self.chip_combobox.currentIndex()                                                                # Gets the combo box index
@@ -358,7 +385,8 @@ class interface_visual_gui(QMainWindow):
     
     # Function to set the sampling frequency
     def sampling_frequency_function(self):
-        '''
+        '''Sampling frequency function
+        
         This public function is called when the sampling frequency is changed by the user.
         '''
         sampling_frequency_index = self.sampling_frequency_slider.value()                                       # Gets the slider index
@@ -374,7 +402,8 @@ class interface_visual_gui(QMainWindow):
         
     # Function to set the high pass filter cutoff frequency
     def highpass_frequency_function(self):
-        '''
+        '''High frequency function
+        
         This public function is called when the high pass filter cutoff frequency is changed 
         by the user.
         '''
@@ -392,7 +421,8 @@ class interface_visual_gui(QMainWindow):
         
     # Function to set the low pass filter cutoff frequency
     def lowpass_frequency_function(self):
-        '''
+        '''Lowpass frequency function
+        
         This public function is called when the low pass filter cutoff frequency is changed
         by the user.
         '''
@@ -410,7 +440,8 @@ class interface_visual_gui(QMainWindow):
                       
     # Function to check and uncheck the channels radio buttuns
     def check_all_function(self):
-        '''
+        '''Check all functions
+        
         This public function is called when uncheck/check button is clicked. 
         '''
         check_all = self.check_all_button.text()                                                                # Gets the current text in the button
@@ -485,7 +516,8 @@ class interface_visual_gui(QMainWindow):
             
     # This function sets the record time 
     def get_time_configuration_function(self):
-        '''
+        '''Get time configuration function
+        
         This public function is called when the registration button is clicked. Here the 
         time settings selected by the user will be changed in the options dictionaries 
         and the total acquisition time will be calculated
@@ -503,7 +535,8 @@ class interface_visual_gui(QMainWindow):
 
     # This public function defines the channels to be sampled
     def get_channels_configuration_function(self):
-        '''
+        '''Get channel configuration function
+        
         This public function is called when the registration button is clicked. Here 
         the active channels will be identified, organized in a list that will be passed 
         to the option dictionaries
@@ -549,7 +582,8 @@ class interface_visual_gui(QMainWindow):
 #%% USB FUNCTIONS 
 
     def usb_port_function(self):
-        '''
+        '''Usb port function
+        
         This public function will identify the USB ports connected to the computer, show 
         them to the user and configure the options dictionary.
         '''
@@ -568,7 +602,8 @@ class interface_visual_gui(QMainWindow):
             return
     
     def usb_selection_function(self):
-        '''
+        '''Usb selection function
+        
         This public function is auxiliary to the cime function and identifies changes in 
         the combo box
         '''
@@ -594,7 +629,8 @@ class interface_visual_gui(QMainWindow):
     
     # This function is the interface output, where the program will start to sampling 
     def start_view_mode_function(self):
-        '''
+        '''Start view mode function
+        
         This public function is called when the record button is clicked. 
         '''
         self.get_time_configuration_function()                                                                  # Calls the function to define the record time 
@@ -819,7 +855,8 @@ class interface_visual_gui(QMainWindow):
 #%% TIMER FUNCTIONS
 
     def start_timers_function(self):
-        '''
+        '''Start timers function
+        
         This public function starts the user-programmed timer for the duration of the experiment.
         '''
 
@@ -857,7 +894,8 @@ class interface_visual_gui(QMainWindow):
             self.directory_timer.stop()
     
     def update_statistics_function(self):
-        '''
+        '''Update statistics function
+        
         This public function is called when the "update statistics" button is clicked. It aims 
         to update the progress bar, the experiment time and estimate the amount of samples 
         acquired.
@@ -891,7 +929,8 @@ class interface_visual_gui(QMainWindow):
     
     # Function to clear all selections made
     def clear_function(self):
-        '''
+        '''Clear function
+        
         This public function is called when the clear button is clicked. All user selections 
         will be cleared
         '''

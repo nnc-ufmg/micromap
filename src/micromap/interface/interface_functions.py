@@ -32,8 +32,9 @@ import serial
 matplotlib.use('Qt5Agg')
 from numpy import where, array
 
-class acquisition:
-    '''
+class acquisition: 
+    '''Acquisition
+    
     This class defines the main attributes of signal acquisition. As some 
     of these parameters give rise to others through internal operations, 
     these are made private and are only accessed via getters and setters.
@@ -62,6 +63,7 @@ class acquisition:
         - Number of channels to do acquisition (int)
         - List of channels to do acquisition (number list)
         - Total time of record (number in seconds)
+        
     '''
     def __init__(self):       
         self.is_recording_mode = False
@@ -85,45 +87,52 @@ class acquisition:
     
     # SETTERS METHODS    
     def set_sampling_frequency_by_index(self, slider_index):
-        '''
+        '''Set sampling frequency by index
+        
         This public function changes the sampling frequency
         
-        Parameters:
-            - slider_index .... Interface slider index
+        Args:
+            slider_index (index int number): Interface slider index.
+            
         '''
         frequencies = [1, 100, 500, 1000, 2000, 5000, 10000, 20000, 30000]                       # Possible values ​​of sampling frequency
         self.sampling_frequency = frequencies[slider_index]                        # Sets the attribute with the correspondent frequency
             
     def set_highpass_by_index(self, slider_index):
-        '''
+        '''Set highpass by index
+        
         This public function changes the highpass fliter cutoff frequency
         
-        Parameters:
-            - slider_index .... Interface slider index
+        Args:
+            slider_index (index int number): Interface slider index.
+            
         '''
         frequencies = [0.1, 0.25, 0.3, 0.5, 0.75, 1, 1.5, 2, 2.5, 3, 5, 7.5,
                        10, 15, 20, 25, 30, 50, 75, 100, 150, 200, 250, 300, 500]    # Possible values ​​of cutoff frequency
         self.highpass = frequencies[slider_index]                                  # Sets the attribute with the correspondent frequency
         
     def set_lowpass_by_index(self, slider_index):
-        '''
+        '''Set lowpass by index
+        
         This public function changes the lowpass fliter cutoff frequency
         
-        Parameters:
-            - slider_index .... Interface slider index
+        Args:
+            slider_index (index int number): Interface slider index.
+            
         '''
         frequencies = [100, 150, 200, 250, 300, 500, 750, 1000, 1500,
                        2000, 2500, 3000, 5000, 7500, 10000, 15000, 20000]           # Possible values ​​of cutoff frequency 
         self.lowpass = frequencies[slider_index]                                   # Sets the attribute with the correspondent frequency
                 
     def set_channels(self, bool_list):
-        '''
+        '''Set channels
+        
         This public function changes the list of channels to be recorded and 
         the boolean list of channels to be recorded
         
-        Parameters:
-            - bool_list .... Boolean list with channels on (1 for on 
-                             and 1 for off) 
+        Args:
+            bool_list (boolean list): Boolean list with channels on (1 for on and 1 for off).
+            
         '''
         if self.chip == "RHD2132":                                                 # If the chip is an RHD2132
             channels_bool = bool_list
@@ -150,9 +159,10 @@ class acquisition:
         self.number_channels = sum(channels_bool)    
        
     def get_total_time(self):
-        '''
-        This public function outputs to the client class the total 
-        time of record in seconds
+        '''Get total time
+        
+        This public function outputs to the client class the total time of record in seconds.
+        
         '''
         self.total_time = self.days*24*60*60 + self.hours*60*60 + \
                             self.minutes*60 + self.seconds                         # Calculates the total time in seconds
@@ -179,43 +189,50 @@ class acquisition:
 
 
 class usb_singleton():
-    '''
+    '''Usb singleton
+    
     This class starts and controls a single USB connection instance
     
-    Parameters:
-        - usb_port ..... Port that will be connected
-        - baund_rate ... Data transfer frequency
+    Args:
+        usb_port (string): Port that will be connected.
+        baund_rate: Data transfer frequency.
+        
     '''
     def __init__(self, usb_port, baund_rate = 50000000):
         self.usb_port = usb_port
         self.baund_rate = baund_rate
      
     def connect(self):
-        '''
+        '''Connect
+        
         This function connect the USB port
         '''
         self.port = serial.Serial(self.usb_port, self.baund_rate)               # Initializes the USB port with the especified parameters
         
     def disconnect(self):
-        '''
+        '''Disconnect
+        
         This function disconnect the USB port
         '''
         self.port.close()                                                       # Finishes the USB port
         
     def send_direct(self, command):
-        '''
+        '''Send direct
+        
         This function sends a generic message to the USB port and receives
         the answer
         
-        Parameters:
-            - command ..... Command to be sent in hexadecimal
+        Args:
+            command: Command to be sent in hexadecimal.
+            
         '''
         self.port.write(command)                                                # Sends the messsage via USB port
         connection_ok = self.port.read(4)                                       # Reads the 4bytes answer message
         return connection_ok                                                    # Returns the answer message
     
     def request_acquisition(self):
-        '''
+        '''Request acquisition
+        
         This function sends to microcontroller the command to initialize the
         data acquisition
         '''
@@ -226,7 +243,8 @@ class usb_singleton():
         return
     
     def stop_acquisition(self):
-        '''
+        '''Stop acquisition
+        
         This function sends to microcontroller the command to stop the
         data acquisition
         '''
@@ -237,12 +255,14 @@ class usb_singleton():
         return
     
     def set_sampling_frequency(self, frequency):
-        '''
+        '''Set sampling frequency
+        
         This function sends to microcontroller the command to set the data 
         acquisition sampling frequency
         
-        Parameters:
-            - frequency ..... Data acquisition sampling frequency 
+        Args:
+            frequency: Data acquisition sampling frequency.
+            
         '''
         frequency = int(frequency).to_bytes(2, 'big')                           # Gets the frequency and transforms in bytes type
         command = bytearray(b'\xC0\x00')                                        # Defines the mask to configures the sampling frequency
@@ -252,13 +272,14 @@ class usb_singleton():
         return frequency_ok                                                     # Returns the answer message
     
     def set_channel_0to15(self, channels_bool):
-        '''
+        '''Set channel 0to15
+        
         This function sends to microcontroller the command to set the channels
         that will be recorded (channels 15 to 0 in this order)
         
-        Parameters:
-            - channels_bool ..... Channels that will be recorded in bollean list, 
-                                  1 turns channel on and 0 turns off (order: 31 to 0)
+        Args:
+            channels_bool: Channels that will be recorded in bollean list, 1 turns channel on and 0 turns off (order: 31 to 0).
+            
         '''
         command = bytearray(b'\xC1\x00')                                        # Defines the mask to configures the channels 31 to 16
         command = command + channels_bool[2].to_bytes(1,'big')                  # Gets the channels 31 to 24 and transforms in bytes type
@@ -269,13 +290,14 @@ class usb_singleton():
         return channels_ok                                                      # Returns the answer message
     
     def set_channel_16to31(self, channels_bool):
-        '''
+        '''Set channel 16to31
+        
         This function sends to microcontroller the command to set the channels
         that will be recorded (channels 31 to 16 in this order)
         
-        Parameters:
-            - channels_bool ..... Channels that will be recorded in bollean list, 
-                                  1 turns channel on and 0 turns off (order: 31 to 0)
+        Args:
+            channels_bool: Channels that will be recorded in bollean list, 1 turns channel on and 0 turns off (order: 31 to 0).
+            
         '''
         command = bytearray(b'\xC2\x00')                                        # Defines the mask to configures the channels 15 to 0
         command = command + channels_bool[0].to_bytes(1,'big')                  # Gets the channels 15 to 8 and transforms in bytes type
@@ -286,13 +308,14 @@ class usb_singleton():
         return channels_ok                                                      # Returns the answer message
     
     def set_highpass_frequency(self, slider_index):
-        '''
+        '''Ser highpass frequency
+        
         This function sends to microcontroller the command to set the high pass
         filter cutoff frequency
         
-        Parameters:
-            - slider_index ..... Index that represents the desired frequency
-                                 (vide table in function "set_highpass")
+        Args:
+            slider_index: Index that represents the desired frequency (vide table in function "set_highpass").
+            
         '''
         slider_index = int(slider_index).to_bytes(2, 'big')                     # Gets the frequency index and transforms in bytes type
         command = bytearray(b'\xC3\x00')                                        # Defines the mask to configures the highpass filter cutoff frequency
@@ -306,9 +329,9 @@ class usb_singleton():
         This function sends to microcontroller the command to set the low pass
         filter cutoff frequency
         
-        Parameters:
-            - slider_index ..... Index that represents the desired frequency 
-                                 (vide table in function "set_lowpass")
+        Args:
+            slider_index: Index that represents the desired frequency (vide table in function "set_lowpass").
+            
         '''
         slider_index = int(slider_index).to_bytes(2, 'big')                     # Gets the frequency index and transforms in bytes type
         command = bytearray(b'\xC4\x00')                                        # Defines the mask to configures the lowpass filter cutoff frequency

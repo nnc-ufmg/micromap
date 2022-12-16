@@ -188,7 +188,7 @@ class receive_data_class(QObject):
         self.plot_data_thread.finished.connect(self.plot_data_thread.deleteLater)                               # When the process is finished, this command deletes the thread
         self.plot_data_thread.start()                                                                           # Starts the thread 
         
-        self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)                     # Configures the USB connection
+        self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)                           # Configures the USB connection
         self.usb.connect()                                                                                      # Connect the USB port
         
     def run_view(self):
@@ -295,10 +295,10 @@ class interface_visual_gui(QMainWindow):
         '''
         super(interface_visual_gui, self).__init__()                                                            # Calls the inherited classes __init__ method
         QMainWindow.__init__(self)                                                                              # Creates the main window
-        self.interface = uic.loadUi(os.path.dirname(__file__) + "\\interface_gui_v2.0.ui", self)                                                 # Loads the interface design archive (made in Qt Designer)
+        self.interface = uic.loadUi(os.path.dirname(__file__) + "\\interface_gui_v2.0.ui", self)                # Loads the interface design archive (made in Qt Designer)
                 
         self.plot_viewer_function()
-        self.showMaximized()
+        self.showMaximized()                                                                                    # Maximizes the application window
         self.show()                                                                                             # Shows the interface to the user
 
         # INTERFCE DEFAULT OPTIONS
@@ -316,14 +316,14 @@ class interface_visual_gui(QMainWindow):
         self.lowpass_frequency_slider.valueChanged[int].connect(self.lowpass_frequency_function)                # Called when low pass cutoff frequency slider is changed
         self.start_recording_button.clicked.connect(self.start_recording_mode_function)                         # Called when the start recording button is clicked
         # Advanced configuration interactions
-        self.command_send_button.clicked.connect(self.send_command_function)
-        self.cancel_advanced_button.clicked.connect(self.cancel_advanced_function)
-        self.continue_to_record_button.clicked.connect(self.continue_to_record_function)
+        self.command_send_button.clicked.connect(self.send_command_function)                                    # Called when "Send" button is clicked
+        self.cancel_advanced_button.clicked.connect(self.cancel_advanced_function)                              # Called when "Cancel" button is clicked
+        self.continue_to_record_button.clicked.connect(self.continue_to_record_function)                        # Called when "Continue to record" button is clicked
         # General interface interactions
         self.check_all_button.clicked.connect(self.check_all_function)                                          # Called when "check/uncheck all" button is clicked
         self.clear_button.clicked.connect(self.clear_function)                                                  # Called when the clear button is clicked
         self.cancel_button.clicked.connect(self.cancel_function)                                                # Called when the cancel button is clicked
-        self.stop_button.clicked.connect(self.stop_function)
+        self.stop_button.clicked.connect(self.stop_function)                                                    # Called when "Stop" button is clicked
         self.record_button.clicked.connect(self.start_view_mode_function)                                       # Called when the clear button is clicked 
         self.plot_next_button.clicked.connect(self.plot_recording_mode_function)                                # Called when the "plot the last samples" button is clicked
         self.update_statistics_button.clicked.connect(self.update_statistics_function)                          # Called when the "update statistics" button is clicked
@@ -331,22 +331,22 @@ class interface_visual_gui(QMainWindow):
 #%% INTERFACE SELECTIONS FUNCTIONS
         
     # Function to set the data aquisition system
-    def method_function(self):
+    def method_function(self):      
         '''Method function
         
         This public function is called when the acquisition method is changed by the user.
         '''
         method = self.method_combobox.currentIndex()                                                             # Gets the combo box index
-        if method == 0:                                                                                          # If is selected FPGA
+        if method == 0:                                                                                          # If is selected ARDUINO
             self.options.method = "ARDUINO"                                                                      # Changes the method on main variables dictionary
-            self.method_lineshow.setText("ARDUINO")                                                               # Changes the line edit (Record tab) in the interface
-        # elif method == 1:                                                                                       # If is selected ARDUINO    
-        #     self.options.method = "FPGA"                                                                        # Changes the method on main variables dictionary 
-        #     self.method_lineshow.setText("FPGA")                                                                # Changes the line edit (Record tab) in the interface
+            self.method_lineshow.setText("ARDUINO")                                                              # Changes the line edit (Record tab) in the interface
+        # elif method == 1:                                                                                      # If is selected FPGA    
+        #     self.options.method = "FPGA"                                                                       # Changes the method on main variables dictionary 
+        #     self.method_lineshow.setText("FPGA")                                                               # Changes the line edit (Record tab) in the interface
 
-        # elif method == 2:                                                                                       # If is selected PI PICO
-        #     self.options.method = "PI PICO"                                                                     # Changes the method on main variables dictionary
-        #     self.method_lineshow.setText("PI PICO")                                                             # Changes the line edit (Record tab) in the interface
+        # elif method == 2:                                                                                      # If is selected PI PICO
+        #     self.options.method = "PI PICO"                                                                    # Changes the method on main variables dictionary
+        #     self.method_lineshow.setText("PI PICO")                                                            # Changes the line edit (Record tab) in the interface
     
     # Function to set what chip will be used
     def chip_function(self):
@@ -612,10 +612,10 @@ class interface_visual_gui(QMainWindow):
             self.options.usb_port = usb_selected                                                                # Changes the USB port option in the acquisition object
 
     def configure_acquisition(self):       
-        self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)
-        self.usb.connect()
+        self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)                           # Configures the USB connection
+        self.usb.connect()                                                                                      # Connect the USB port
         
-        print(self.options.resume_options())
+        print(self.options.resume_options())                                                                    # Calls and print the function "resume_options"
         
         self.usb.set_sampling_frequency(self.options.sampling_frequency)
         self.usb.set_highpass_frequency(self.highpass_frequency_slider.value())
@@ -623,7 +623,7 @@ class interface_visual_gui(QMainWindow):
         self.usb.set_channel_0to15(self.options.channels_bool)
         self.usb.set_channel_16to31(self.options.channels_bool)
         
-        self.usb.disconnect()
+        self.usb.disconnect()                                                                                   # Disconnect the USB port
 
 #%% VIEW MODE FUNCTIONS
     
@@ -959,7 +959,7 @@ class interface_visual_gui(QMainWindow):
     # Function to cancel the data acquisition     
     def cancel_function(self):
         self.data_worker.finish_record()                                                                        # Closes the usb port thread
-        self.stop_timers_function()
+        self.stop_timers_function()                                                                             # Stops timers
                 
         self.is_recording_mode = False
         self.options.save_directory = "None"                                                                    # Change the save directory on main variables dictionary
@@ -985,56 +985,56 @@ class interface_visual_gui(QMainWindow):
         self.channel_config_area.setEnabled(True)                                                               # Enables all the configuration tab                                                  
         self.record_config_area.setEnabled(True)                                                                # Enables all the configuration tab
         self.advanced_frame.setEnabled(False)                                                                   # Disables the record tab
-        self.command_message_lineedit.setText('Type here')
-        self.command_answer_lineedit.setText('')
+        self.command_message_lineedit.setText('Type here')                                                      # Writes the example message on label
+        self.command_answer_lineedit.setText('')                                                                
         self.tabWidget.setCurrentIndex(0)                                                                       # Changes to configuration tab                                                                          
         
     def closeEvent(self, event):                                                                    
         super(interface_visual_gui, self).closeEvent(event)                                                     # Defines the close event                                                             
-        self.stop_timers_function()        
+        self.stop_timers_function()                                                                             # Stops timers
         try:                                                                                                    # Trys to close the view mode
             self.data_worker.finish_record()                                                                    # Closes the usb port thread
-        except:                                                                                                # If the threads do not exists
+        except:                                                                                                 # If the threads do not exists
             QCoreApplication.instance().quit                                                                    # Quits of the window                
 
     def plot_viewer_function(self):
         #self.plot_viewer.setDownsampling(ds=4, auto=True, mode='mean')
         
-        self.plot_viewer.setBackground(None)
-        self.plot_viewer.setLimits(xMin = 0, yMin = 0, xMax = 4, yMax = 33)
-        self.plot_viewer.setXRange(0, 4, padding=0.0001)
-        self.plot_viewer.setYRange(0, 33, padding=-0.001)
+        self.plot_viewer.setBackground(None)                                                                    # Sets the graph's background to empty
+        self.plot_viewer.setLimits(xMin = 0, yMin = 0, xMax = 4, yMax = 33)                                     # Sets the Max and Min axis limits
+        self.plot_viewer.setXRange(0, 4, padding=0.0001)                                                        # Sets the unit range on X axis
+        self.plot_viewer.setYRange(0, 33, padding=-0.001)                                                       # Sets the unit range on Y axis
         
-        y_axis = self.plot_viewer.getAxis('left')
-        y_axis.setStyle(tickLength=0, showValues=True)
+        y_axis = self.plot_viewer.getAxis('left')                                                               # Y axis will be to the left
+        y_axis.setStyle(tickLength=0, showValues=True)                                                          # Set Y axis without ticks and with value escale
         
-        x_axis = self.plot_viewer.getAxis('bottom')
-        x_axis.setStyle(tickLength=10, showValues=True)
+        x_axis = self.plot_viewer.getAxis('bottom')                                                             # X axis will be bottom
+        x_axis.setStyle(tickLength=10, showValues=True)                                                         # Set X axis with ticks and value escale
         
-        label_style = {'family':'DejaVu Sans', 'color': '#969696', 'font-size': '10pt', 'font-weight': 'bold'}
-        self.plot_viewer.setLabel('bottom', "Time [seconds]", **label_style)
-        self.plot_viewer.setLabel('left', "Channels", **label_style)
+        label_style = {'family':'DejaVu Sans', 'color': '#969696', 'font-size': '10pt', 'font-weight': 'bold'}  # Label style config
+        self.plot_viewer.setLabel('bottom', "Time [seconds]", **label_style)                                    # Sets X axis label
+        self.plot_viewer.setLabel('left', "Channels", **label_style)                                            # Sets Y axis label
         
-        y_ticks_length = range(1,33)
-        y_axis.setTicks([[(v, str(v)) for v in y_ticks_length]])
+        y_ticks_length = range(1,33)                                                                            # Sets a range on the Y axis from 1 to 32
+        y_axis.setTicks([[(v, str(v)) for v in y_ticks_length]])                                                # Transforms the Y axis values as the channel numbering
 
-        font = QtGui.QFont()
-        font.setPixelSize(10)
-        font.setBold(True)
-        font.setFamily("DejaVu Sans")
-        x_ticks = self.plot_viewer.getAxis("bottom")
-        y_ticks = self.plot_viewer.getAxis("left")
-        x_ticks.setStyle(tickFont = font)
-        y_ticks.setStyle(tickFont = font)
-        x_ticks.setPen('#969696')
-        y_ticks.setPen('#969696')
-        x_ticks.setTextPen('#969696')
-        y_ticks.setTextPen('#969696')
-        x_ticks.setStyle(tickTextOffset = 10)
-        y_ticks.setStyle(tickTextOffset = 10)
+        font = QtGui.QFont()                                                                                    # Use an Qt font
+        font.setPixelSize(10)                                                                                   # Sets font size
+        font.setBold(True)                                                                                      # Sets bold font    
+        font.setFamily("DejaVu Sans")                                                                           # Sets family font
+        x_ticks = self.plot_viewer.getAxis("bottom")                                                            # X ticks will be bottom
+        y_ticks = self.plot_viewer.getAxis("left")                                                              # Y ticks will be to the left
+        x_ticks.setStyle(tickFont = font)                                                                       # Sets X tick style 
+        y_ticks.setStyle(tickFont = font)                                                                       # Sets Y tick style
+        x_ticks.setPen('#969696')                                                                               # Sets X tick color
+        y_ticks.setPen('#969696')                                                                               # Sets Y tick color
+        x_ticks.setTextPen('#969696')                                                                           # Sets X tick text color
+        y_ticks.setTextPen('#969696')                                                                           # Sets Y tick text color
+        x_ticks.setStyle(tickTextOffset = 10)                                                                   # Sets spacing between axis and text
+        y_ticks.setStyle(tickTextOffset = 10)                                                                   # Sets spacing between axis and text
 
         range_ = self.plot_viewer.getViewBox().viewRange() 
-        self.plot_viewer.getViewBox().setLimits(xMin=range_[0][0], xMax=range_[0][1], yMin=range_[1][0], yMax=range_[1][1])  
+        self.plot_viewer.getViewBox().setLimits(xMin=range_[0][0], xMax=range_[0][1], yMin=range_[1][0], yMax=range_[1][1])  # Sets the limits for each of the axis
 
 #%% INITIALIZANTION FUNCTION
 

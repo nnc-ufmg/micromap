@@ -13,7 +13,7 @@ MicroMAP: Low cost, high performance package for electrophysiological recording
    :maxdepth: 3
 
    installation
-   options
+   modules
    mounting
    tips
    usage
@@ -31,7 +31,7 @@ with the software.
 ---------------
 
 * For tips about how to use the software, please see the :doc:`/tips` page
-* For a list of all the available options and more detailed information, please see the :doc:`/options` page 
+* For a list of all the available options and more detailed information, please see the :doc:`/micromap` page 
 * Check out the :doc:`/usage` section for a detailed description of how to use the software
 
 

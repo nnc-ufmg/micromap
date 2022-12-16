@@ -1,5 +1,11 @@
 # Configuration file for the Sphinx documentation builder.
 
+# -- Path setup
+import os
+import sys
+
+sys.path.insert(0, os.path.abspath('..'))
+
 # -- Project information
 
 project = 'MicroMAP'
@@ -13,6 +19,7 @@ version = '0.1'
 
 extensions = [
     'sphinx.ext.duration',
+    'sphinx.ext.autodoc',
 ]
 
 # -- Options for HTML output

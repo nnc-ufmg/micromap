@@ -66,24 +66,24 @@ class acquisition:
         
     '''
     def __init__(self):       
-        self.is_recording_mode = False
+        self.is_recording_mode = False                                           # Recording mode is "FALSE"
         self.method = "ARDUINO"                                                  # Acquisition method (Arduino, FPGA or Pi Pico) 
         self.chip = "RHD2216"                                                    # Aquisition chip (RHD or ADS)
-        self.sampling_frequency = 2000
-        self.highpass = 0.1
-        self.lowpass = 20000
+        self.sampling_frequency = 2000                                           # Desired sampling frequency
+        self.highpass = 0.1                                                      # Desired highpass filter frequency
+        self.lowpass = 20000                                                     # Desired lowpass filter frequency
         self.days = 0                                                            # Desired day of data acquisition
         self.hours = 1                                                           # Desired hours of data acquisition
         self.minutes = 0                                                         # Desired minutes of data acquisition
         self.seconds = 0                                                         # Desired seconds of data acquisition
-        self.total_time = 360
+        self.total_time = 3600                                                   # Total acquisition time in seconds
         self.channels = [1]*16                                                   # Channels that will be sampled in a boolean list
-        self.number_channels = 16
-        self.channels_bool = 'ffff'
-        self.usb_port = "None"                                               # USB port connection
-        self.save_directory = "None"                                         # Directory to save the data
-        self.record_time = 0
-        self.is_recording_mode = False
+        self.number_channels = 16                                                # Number of channels selected
+        self.channels_bool = 'ffff'                                              # Bool list of the channels
+        self.usb_port = "None"                                                   # USB port connection
+        self.save_directory = "None"                                             # Directory to save the data
+        self.record_time = 0                                                     # Recorded time
+        self.is_recording_mode = False                                           # Recording mode is "FALSE"
     
     # SETTERS METHODS    
     def set_sampling_frequency_by_index(self, slider_index):
@@ -135,28 +135,28 @@ class acquisition:
             
         '''
         if self.chip == "RHD2132":                                                 # If the chip is an RHD2132
-            channels_bool = bool_list
-            byte = ''.join([str(item) for item in bool_list])
-            byte = byte[::-1]
-            byte = int(byte, 2).to_bytes(4, 'big')
+            channels_bool = bool_list                                              # Sets the attribute with bool_list of channels
+            byte = ''.join([str(item) for item in bool_list])                      # Concatenates the bool_list in a string
+            byte = byte[::-1]                                                      # Inverts the string
+            byte = int(byte, 2).to_bytes(4, 'big')                                 # Converts the string to Arduino's reading format
             self.channels_bool = byte                                              # Sets the attribute with all 32 channels will be available
         elif self.chip == "RHD2216":                                               # If the chip is an RHD2216
-            channels_bool = bool_list[0:16]    
-            byte = ''.join([str(item) for item in bool_list[0:16]])
-            byte = byte[::-1]
-            byte = int(byte, 2).to_bytes(4, 'big')
+            channels_bool = bool_list[0:16]                                        # Sets the attribute with bool_list of channels
+            byte = ''.join([str(item) for item in bool_list[0:16]])                # Concatenates the bool_list in a string
+            byte = byte[::-1]                                                      # Inverts the string
+            byte = int(byte, 2).to_bytes(4, 'big')                                 # Converts the string to Arduino's reading format
             self.channels_bool = byte                                              # Sets the attribute with only 16 channels will be available
         else:                                                                      # If the chip is an ADS1298        
-            channels_bool = bool_list[0:8]
-            byte = ''.join([str(item) for item in bool_list[0:8]])
-            byte = byte[::-1]
-            byte = int(byte, 2).to_bytes(4, 'big')                         
+            channels_bool = bool_list[0:8]                                         # Sets the attribute with sized bool_list of channels
+            byte = ''.join([str(item) for item in bool_list[0:8]])                 # Concatenates the bool_list in a string
+            byte = byte[::-1]                                                      # Inverts the string
+            byte = int(byte, 2).to_bytes(4, 'big')                                 # Converts the string to Arduino's reading format
             self.channels_bool = byte                                              # Sets the attribute with only 8 channels will be available
                
         channels = array(channels_bool)                                            # Turns a list in an array
         self.channels = where(channels == 1)[0]                                    # Gets only the indexes that will be registered 
         self.channels = [x + 1 for x in self.channels]                             # Sets the attribute adding 1 in all elements of a list to eliminate the index 0
-        self.number_channels = sum(channels_bool)    
+        self.number_channels = sum(channels_bool)                                  # Gets the number of channels selected    
        
     def get_total_time(self):
         '''Get total time
@@ -170,19 +170,19 @@ class acquisition:
 
     def resume_options(self):
         self._resume = {}
-        self._resume["Method"] = self.method
-        self._resume["Chip"] = self.chip
-        self._resume["Sampling Frequency"] = self.sampling_frequency
-        self._resume["High Pass Filter"] = self.highpass
-        self._resume["Low Pass Filter"] = self.lowpass
+        self._resume["Method"] = self.method                                                # Updates the Method in the "resume"
+        self._resume["Chip"] = self.chip                                                    # Updates the Chip in the "resume"
+        self._resume["Sampling Frequency"] = self.sampling_frequency                        # Updates the Sampling Frequency in the "resume"
+        self._resume["High Pass Filter"] = self.highpass                                    # Updates the High Pass Filter in the "resume"
+        self._resume["Low Pass Filter"] = self.lowpass                                      # Updates the Low Pass Filter in the "resume"
         self._resume["Duration"] = str(self.days) + ':' + str(self.hours) + ':' +  \
-                                   str(self.minutes) + ':' +  str(self.seconds)
-        self._resume["Total Time"] = self.get_total_time()
-        self._resume["Number of Channels"] = self.number_channels
-        self._resume["Channels (Boolean)"] = str(self.channels_bool.hex())
-        self._resume["Channels"] = self.channels
-        self._resume["USB Port"] = self.usb_port
-        self._resume["Save Direcoty"] = self.save_directory
+                                   str(self.minutes) + ':' +  str(self.seconds)             # Updates the Duration in the "resume"
+        self._resume["Total Time"] = self.get_total_time()                                  # Updates the Total Time in the "resume"
+        self._resume["Number of Channels"] = self.number_channels                           # Updates the Number of Channels in the "resume"
+        self._resume["Channels (Boolean)"] = str(self.channels_bool.hex())                  # Updates the Channels (Boolean) in the "resume"
+        self._resume["Channels"] = self.channels                                            # Updates the Channels in the "resume"
+        self._resume["USB Port"] = self.usb_port                                            # Updates the USB Port in the "resume"
+        self._resume["Save Direcoty"] = self.save_directory                                 # Updates the Save Directory in the "resume"
         
         return self._resume        
            
@@ -198,9 +198,9 @@ class usb_singleton():
         baund_rate: Data transfer frequency.
         
     '''
-    def __init__(self, usb_port, baund_rate = 50000000):
-        self.usb_port = usb_port
-        self.baund_rate = baund_rate
+    def __init__(self, usb_port, baund_rate = 50000000):                        
+        self.usb_port = usb_port                                                # Sets USB port
+        self.baund_rate = baund_rate                                            # Sets USB data transfer frequency
      
     def connect(self):
         '''Connect
@@ -284,9 +284,9 @@ class usb_singleton():
         command = bytearray(b'\xC1\x00')                                        # Defines the mask to configures the channels 31 to 16
         command = command + channels_bool[2].to_bytes(1,'big')                  # Gets the channels 31 to 24 and transforms in bytes type
         command = command + channels_bool[3].to_bytes(1,'big')                  # Gets the channels 23 to 16 and transforms in bytes type
-        print(str(command.hex()))
+        print(str(command.hex()))                                               # Prints the command
         self.port.write(command)                                                # Sends the messsage via USB port 
-        channels_ok = self.port.read(4)                                         # Reads the 4bytes answer message
+        channels_ok = self.port.read(4)                                         # Reads the 4 bytes answer message
         return channels_ok                                                      # Returns the answer message
     
     def set_channel_16to31(self, channels_bool):
@@ -302,7 +302,7 @@ class usb_singleton():
         command = bytearray(b'\xC2\x00')                                        # Defines the mask to configures the channels 15 to 0
         command = command + channels_bool[0].to_bytes(1,'big')                  # Gets the channels 15 to 8 and transforms in bytes type
         command = command + channels_bool[1].to_bytes(1,'big')                  # Gets the channels 7 to 0 and transforms in bytes type
-        print(str(command.hex()))
+        print(str(command.hex()))                                               # Prints the command
         self.port.write(command)                                                # Sends the messsage via USB port
         channels_ok = self.port.read(4)                                         # Reads the 4bytes answer message
         return channels_ok                                                      # Returns the answer message

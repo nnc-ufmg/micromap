@@ -88,15 +88,15 @@ class plot_data_class(QObject):
         self.number_channels = self.options.number_channels                                                                 # Gets the number of channels that will be recorded
         self.channel_count = list(range(0, self.number_channels))                                                           # Creates a vector with the number of channels lenght        
                 
-        self.atualization_time = 4                                                                                          # Total time in secons to show in plot (default: 4 seconds)
+        self.atualization_time = 4                                                                                          # Total time in seconds to show in plot (default: 4 seconds)
         self.plot_length = self.atualization_time*self.options.sampling_frequency                                           # Total data length to be plotted per channel in "atualization_time"
         self.bytes_to_plot = self.options.number_channels*self.options.sampling_frequency                                   # Total data length to be plotted
         self.time_in_seconds = numpy.linspace(0, self.atualization_time, self.plot_length)                                  # Time vector in seconds
         self.unpack_format = "<" + str(int(self.bytes_to_plot)) + "h"                                                       # Format to struct.unpack( ) function reads the data (two's complement little edian)     
 
-        self.plot_pen = mkPen('#D88A8A', width=0.8)
-        self.clear_plot()
-        self.setup_plot()
+        self.plot_pen = mkPen('#D88A8A', width=0.8)                                                                         # Sets the plot pen 
+        self.clear_plot()                                                                                                   # Calls the clear plot function
+        self.setup_plot()                                                                                                   # Calls the setup plot function
                                 
     def plot(self):
         '''Plot
@@ -177,7 +177,7 @@ class receive_data_class(QObject):
         
         self._is_running = True                                                                                 # Signal that allows the while loop to be started     
         self._is_stopped = False                                                                                # Signal that allows the while loop to be paused
-        self._change_directory = False
+        self._change_directory = False                                                                          # Signal that changes the directory is false
         
         self.plot_data_thread = QThread()                                                                       # Creates a QThread object to plot the received data
         self.plot_data_worker = plot_data_class(self.plot_viewer, self.options, self.buffer)                    # Creates a worker object named plot_data_class
@@ -188,7 +188,7 @@ class receive_data_class(QObject):
         self.plot_data_thread.finished.connect(self.plot_data_thread.deleteLater)                               # When the process is finished, this command deletes the thread
         self.plot_data_thread.start()                                                                           # Starts the thread 
         
-        self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)                     # Configures the USB connection
+        self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)                           # Configures the USB connection
         self.usb.connect()                                                                                      # Connect the USB port
         
     def run_view(self):
@@ -243,7 +243,7 @@ class receive_data_class(QObject):
                 self.file.close()                                                                               # Closes the last file 
                 self.file = open(self.options.save_directory + "_" + 
                                  str(self.directory_count) + ".bin", "wb")                                      # Opens/Creates the new file to write the binary data
-                self._change_directory = False
+                self._change_directory = False                                                                  # Returns the flag to false
 
         self.options.record_time = time.perf_counter() - self.start_time                                        # Shares with the interface the total time of record
                
@@ -258,7 +258,7 @@ class receive_data_class(QObject):
         self.plot_data_worker.plot()                                                                            # Calls the function in plot_data_class (another thread) to plot the data 
     
     def change_direcotory_function(self):
-        self._change_directory = True    
+        self._change_directory = True                                                                           # Signal that change the directory is true
     
     def continue_record(self):
         self.usb.request_acquisition()                                                                          # Command to start the data acquisition    
@@ -295,10 +295,10 @@ class interface_visual_gui(QMainWindow):
         '''
         super(interface_visual_gui, self).__init__()                                                            # Calls the inherited classes __init__ method
         QMainWindow.__init__(self)                                                                              # Creates the main window
-        self.interface = uic.loadUi(os.path.dirname(__file__) + "\\interface_gui_v2.0.ui", self)                                                 # Loads the interface design archive (made in Qt Designer)
+        self.interface = uic.loadUi(os.path.dirname(__file__) + "\\interface_gui_v2.0.ui", self)                # Loads the interface design archive (made in Qt Designer)
                 
-        self.plot_viewer_function()
-        self.showMaximized()
+        self.plot_viewer_function()                                                                             # Calls the plot viewer function
+        self.showMaximized()                                                                                    # Maximizes the interface window
         self.show()                                                                                             # Shows the interface to the user
 
         # INTERFCE DEFAULT OPTIONS
@@ -316,14 +316,14 @@ class interface_visual_gui(QMainWindow):
         self.lowpass_frequency_slider.valueChanged[int].connect(self.lowpass_frequency_function)                # Called when low pass cutoff frequency slider is changed
         self.start_recording_button.clicked.connect(self.start_recording_mode_function)                         # Called when the start recording button is clicked
         # Advanced configuration interactions
-        self.command_send_button.clicked.connect(self.send_command_function)
-        self.cancel_advanced_button.clicked.connect(self.cancel_advanced_function)
-        self.continue_to_record_button.clicked.connect(self.continue_to_record_function)
+        self.command_send_button.clicked.connect(self.send_command_function)                                    # Called when send button on advanced options is clicked
+        self.cancel_advanced_button.clicked.connect(self.cancel_advanced_function)                              # Called when cancel button on advanced options is clicked
+        self.continue_to_record_button.clicked.connect(self.continue_to_record_function)                        # Called when record button on advanced options is clicked 
         # General interface interactions
         self.check_all_button.clicked.connect(self.check_all_function)                                          # Called when "check/uncheck all" button is clicked
         self.clear_button.clicked.connect(self.clear_function)                                                  # Called when the clear button is clicked
         self.cancel_button.clicked.connect(self.cancel_function)                                                # Called when the cancel button is clicked
-        self.stop_button.clicked.connect(self.stop_function)
+        self.stop_button.clicked.connect(self.stop_function)                                                    # Called when stop button is clicked
         self.record_button.clicked.connect(self.start_view_mode_function)                                       # Called when the clear button is clicked 
         self.plot_next_button.clicked.connect(self.plot_recording_mode_function)                                # Called when the "plot the last samples" button is clicked
         self.update_statistics_button.clicked.connect(self.update_statistics_function)                          # Called when the "update statistics" button is clicked
@@ -336,11 +336,11 @@ class interface_visual_gui(QMainWindow):
         
         This public function is called when the acquisition method is changed by the user.
         '''
-        method = self.method_combobox.currentIndex()                                                             # Gets the combo box index
-        if method == 0:                                                                                          # If is selected FPGA
-            self.options.method = "ARDUINO"                                                                      # Changes the method on main variables dictionary
+        method = self.method_combobox.currentIndex()                                                              # Gets the combo box index
+        if method == 0:                                                                                           # If is selected ARDUINO
+            self.options.method = "ARDUINO"                                                                       # Changes the method on main variables dictionary
             self.method_lineshow.setText("ARDUINO")                                                               # Changes the line edit (Record tab) in the interface
-        # elif method == 1:                                                                                       # If is selected ARDUINO    
+        # elif method == 1:                                                                                       # If is selected FPGA    
         #     self.options.method = "FPGA"                                                                        # Changes the method on main variables dictionary 
         #     self.method_lineshow.setText("FPGA")                                                                # Changes the line edit (Record tab) in the interface
 
@@ -612,18 +612,18 @@ class interface_visual_gui(QMainWindow):
             self.options.usb_port = usb_selected                                                                # Changes the USB port option in the acquisition object
 
     def configure_acquisition(self):       
-        self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)
-        self.usb.connect()
+        self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)                           # Configures the USB connection
+        self.usb.connect()                                                                                      # Connect the USB port
         
-        print(self.options.resume_options())
+        print(self.options.resume_options())                                                                    # Prints the resume options
         
-        self.usb.set_sampling_frequency(self.options.sampling_frequency)
-        self.usb.set_highpass_frequency(self.highpass_frequency_slider.value())
-        self.usb.set_lowpass_frequency(self.lowpass_frequency_slider.value())
-        self.usb.set_channel_0to15(self.options.channels_bool)
-        self.usb.set_channel_16to31(self.options.channels_bool)
+        self.usb.set_sampling_frequency(self.options.sampling_frequency)                                        # Sets the sampling frequency
+        self.usb.set_highpass_frequency(self.highpass_frequency_slider.value())                                 # Sets the Highpass Filter frequency
+        self.usb.set_lowpass_frequency(self.lowpass_frequency_slider.value())                                   # Sets the Lowpass Filter frequency
+        self.usb.set_channel_0to15(self.options.channels_bool)                                                  # Sets the 0-15 channels
+        self.usb.set_channel_16to31(self.options.channels_bool)                                                 # Sets the 16-32 channels
         
-        self.usb.disconnect()
+        self.usb.disconnect()                                                                                   # Disconnects USB port
 
 #%% VIEW MODE FUNCTIONS
     
@@ -642,9 +642,9 @@ class interface_visual_gui(QMainWindow):
         
         answer = self.resume_message_function()                                                                 # Calls a function to create the configuration resume message
         if answer == "yes" and self.advanced_checkbox.isChecked() == False:                                     # If the user option is "yes" and advanced settings is not selected  
-            #try:                                                                                                # Trys to execute the communication function
-            self.configure_acquisition()
-            self.view_mode_function()                                                                       # Calls the commmunication function to open the data acquisition thread
+            #try:                                                                                               # Trys to execute the communication function
+            self.configure_acquisition()                                                                        # Calls the acquisition configuration function
+            self.view_mode_function()                                                                           # Calls the commmunication function to open the data acquisition thread
             #except:
             #    text = str('The interface failed to try to start the threads responsible' +
             #               ' for signal acquisition. Try starting the record again, if the' +
@@ -658,7 +658,7 @@ class interface_visual_gui(QMainWindow):
             self.record_show_frame.setEnabled(True)                                                             # Enables all the configuration tab
             self.tabWidget.setCurrentIndex(1)                                                                   # Changes to record tab      
         elif answer == "yes" and self.advanced_checkbox.isChecked() == True:                                    # If the user option is "yes" and advanced settings is not selected  
-            self.configure_acquisition()
+            self.configure_acquisition()                                                                        # Calls the acquisition configuration function
             self.frequency_config_area.setEnabled(False)                                                        # Disables all the configuration tab
             self.channel_config_area.setEnabled(False)                                                          # Disables all the configuration tab
             self.record_config_area.setEnabled(False)                                                           # Disables all the configuration tab
@@ -687,14 +687,14 @@ class interface_visual_gui(QMainWindow):
         try:
             Tk().withdraw()                                                                                     # Hide a Tk window
             save_directory = save_dir_popup(filetypes=(("Save file","*.bin"),("All files","*")))                # Opens the computer directorys to chose the save file
-            if save_directory == '':
-                self.options.save_directory = "None" 
-                self.view_mode_function()
+            if save_directory == '':                                                                            # If nameless  
+                self.options.save_directory = "None"                                                            # Name with "None"
+                self.view_mode_function()                                                                       # Starts view mode function
                 return
             else:
-                self.experiment_name_lineshow.setText(save_directory.split("/")[-1])
+                self.experiment_name_lineshow.setText(save_directory.split("/")[-1])                            # Sets the name in directory
                 self.options.save_directory = save_directory                                                    # Changes the save directory on main variables dictionary
-                self.options.is_recording_mode = True
+                self.options.is_recording_mode = True                                                           # Changes the recording mode flag to "true"
         except:
             text = str('\nWARNING: The interface failed to create the binary file,' + 
                        ' please select a valid directory')                                                      # Message to be displeyed
@@ -747,37 +747,37 @@ class interface_visual_gui(QMainWindow):
         self.tabWidget.setCurrentIndex(1)                                                                       # Changes to record tab      
 
     def send_command_function(self):
-        command = self.command_message_lineedit.text()
+        command = self.command_message_lineedit.text()                                                          # The command is writed in the line edit interface
         
-        if len(command) <= 8:
-            command = int('0x' + command, 16).to_bytes(4,'big')
-        else:
-            self.command_answer_lineedit.setText('cmd > 4 bytes')
+        if len(command) <= 8:                                                                                   # If the command's length is less or equal to 8 characters
+            command = int('0x' + command, 16).to_bytes(4,'big')                                                 # Modificates the command to send to Arduino
+        else:                                                                                                   # Else the command's length is largest to 8 characters
+            self.command_answer_lineedit.setText('cmd > 4 bytes')                                               # Answer in the line edit the text: 'cmd > 4 bytes'
             return
 
-        self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)
-        self.usb.connect()
+        self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)                           # Configures the USB connection
+        self.usb.connect()                                                                                      # Connect the USB port
         
-        answer = self.usb.send_direct(command)
+        answer = self.usb.send_direct(command)                                                                  # Establishes the direct communication to ITAM
         
-        self.usb.disconnect()
+        self.usb.disconnect()                                                                                   # Disconnect the USB port
         
-        self.command_answer_lineedit.setText(answer.hex().upper())
+        self.command_answer_lineedit.setText(answer.hex().upper())                                              # Returns the answer in the line edit interface
         self.show_commands_textedit.append('\nCommand sent ....... 0x' + command.hex() + 
-                                                    '\nAnswer received .... 0x' + answer.hex())
+                                                    '\nAnswer received .... 0x' + answer.hex())                 # Shows the resume of communication
 
 #%% WARNING FUNCTIONS
     
     def successful_function(self):
-        self.data_worker.finish_record()
-        self.update_statistics_function()
+        self.data_worker.finish_record()                                                                        # Finishes the record
+        self.update_statistics_function()                                                                       # Calls the update statistics function
         
-        self.stop_timers_function()
+        self.stop_timers_function()                                                                             # Calls the stop timers function
         
-        self.options.is_recording_mode = False
+        self.options.is_recording_mode = False                                                                  # Changes the recording mode flag to 'false'
         self.options.save_directory = "None"                                                                    # Change the save directory on main variables dictionary
         
-        print(self.options.record_time)
+        print(self.options.record_time)                                                                         # Prints the recorded time
         text = str('Data acquisition completed successfully \n\n' +
                    'Duration: {}\n'.format(timedelta(seconds = round(self.options.record_time))))               # Text to be showed in warning message
         self.warning_message_function(text)                                                                     # Shows a warning message
@@ -791,7 +791,7 @@ class interface_visual_gui(QMainWindow):
         self.plot_next_button.setEnabled(False)                                                                 # Returns the plot button to the disable state
         self.progress_bar.setValue(0)                                                                           # Returns the progress bar to 0%
         self.collected_data_lineshow.setText('0')                                                               # Returns the amount of samples collected line edit to 0     
-        self.experiment_name_lineshow.setText("EXPERIMENT NAME")
+        self.experiment_name_lineshow.setText("EXPERIMENT NAME")                                                # Returns the name text to 'Experiment Name'
     
     # This function creates the configuration resume message
     def resume_message_function(self):
@@ -868,30 +868,30 @@ class interface_visual_gui(QMainWindow):
 
         self.timer = QTimer(self)                                                                               # Initializes the timer to end the data acquisition
         self.timer.setInterval(self.options.get_total_time()*1000)                                              # The timer is in milliseconds, so multiply the total time by 1000
-        self.timer.setSingleShot(True)
+        self.timer.setSingleShot(True)                                                                          # Sets the timer to shot only one time
         self.timer.timeout.connect(self.successful_function)                                                    # Called when timer time is reached 
         
-        self.directory_timer = QTimer(self)
-        self.directory_timer.setInterval(int(3.6e6))
-        self.directory_timer.setSingleShot(False)
-        self.directory_timer.timeout.connect(self.change_direcotory_function)
+        self.directory_timer = QTimer(self)                                                                     # Initializes the timer to end the data acquisition
+        self.directory_timer.setInterval(int(3.6e6))                                                            # Sets the interval time to 1 hour
+        self.directory_timer.setSingleShot(False)                                                               # Sets the timer to shot all times
+        self.directory_timer.timeout.connect(self.change_direcotory_function)                                   # Calls the change directory function when the timer is reached
         
-        self.update_statistics_timer = QTimer(self)
-        self.update_statistics_timer.setInterval(int(self.options.get_total_time()*50))
-        self.update_statistics_timer.setSingleShot(False)
-        self.update_statistics_timer.timeout.connect(self.update_statistics_function)
+        self.update_statistics_timer = QTimer(self)                                                             # Initializes the timer to end the data acquisition
+        self.update_statistics_timer.setInterval(int(self.options.get_total_time()*50))                         # Sets the interval time to 2% of total time
+        self.update_statistics_timer.setSingleShot(False)                                                       # Sets the timer to shot all times
+        self.update_statistics_timer.timeout.connect(self.update_statistics_function)                           # Calls the update statistics function when the timer is reached
 
-        self.update_statistics_timer.start()
-        self.directory_timer.start()
-        self.timer.start()
+        self.update_statistics_timer.start()                                                                    # Starts the update statistic timer
+        self.directory_timer.start()                                                                            # Starts the directory timer
+        self.timer.start()                                                                                      # Starts the general timer
         
         self.start_time_estimate = time.perf_counter()                                                          # Gets the time to update the progress statistics
     
     def stop_timers_function(self):
-        if self.options.is_recording_mode == True:
-            self.timer.stop()                                                                                       # Stops the timer
-            self.update_statistics_timer.stop()
-            self.directory_timer.stop()
+        if self.options.is_recording_mode == True:                                                              # If recording mode flag is 'true'
+            self.timer.stop()                                                                                   # Stops the general timer
+            self.update_statistics_timer.stop()                                                                 # Stops the update statistics timer
+            self.directory_timer.stop()                                                                         # Stops the directory timer
     
     def update_statistics_function(self):
         '''Update statistics function
@@ -903,7 +903,7 @@ class interface_visual_gui(QMainWindow):
         self.record_time_estimate = round(time.perf_counter() - self.start_time_estimate)                       # Calculates the current acquisition time 
         self.run_time_lineshow.setText(str(timedelta(seconds=self.record_time_estimate)))                       # Changes the line edit (Record tab) in the interface
         
-        if self.options.is_recording_mode == True:
+        if self.options.is_recording_mode == True:                                                              # If recording mode flag is 'true'
             self.amount_data_estimate = self.record_time_estimate*self.options.sampling_frequency               # Estimates the total sample that should have been collected so far
             self.collected_data_lineshow.setText(str(round(self.amount_data_estimate)))                         # Shows the estimate in the line edit
             
@@ -920,12 +920,12 @@ class interface_visual_gui(QMainWindow):
         self.data_worker.change_direcotory_function()
 
     def stop_function(self): 
-        if self.stop_button.text() == "STOP":
-            self.data_worker.stop_record()                                                                      # 
-            self.stop_button.setText("START")
+        if self.stop_button.text() == "STOP":                                                                   # If the button text is 'stop'
+            self.data_worker.stop_record()                                                                      # Stops the record
+            self.stop_button.setText("START")                                                                   # Changes the text on the button to 'start'
         else:
-            self.data_worker.continue_record()                                                                  # 
-            self.stop_button.setText("STOP")
+            self.data_worker.continue_record()                                                                  # Continues the record
+            self.stop_button.setText("STOP")                                                                    # Changes the text on the button to 'stop'
     
     # Function to clear all selections made
     def clear_function(self):
@@ -959,9 +959,9 @@ class interface_visual_gui(QMainWindow):
     # Function to cancel the data acquisition     
     def cancel_function(self):
         self.data_worker.finish_record()                                                                        # Closes the usb port thread
-        self.stop_timers_function()
+        self.stop_timers_function()                                                                             # Stops the timers
                 
-        self.is_recording_mode = False
+        self.is_recording_mode = False                                                                          # Change the recording mode flag to 'false'
         self.options.save_directory = "None"                                                                    # Change the save directory on main variables dictionary
         
         text = str('Data acquisition has been canceled \n\n' +
@@ -978,63 +978,63 @@ class interface_visual_gui(QMainWindow):
         self.plot_next_button.setEnabled(False)                                                                 # Returns the plot button to the disable state
         self.progress_bar.setValue(0)                                                                           # Returns the progress bar to 0%
         self.collected_data_lineshow.setText('0')                                                               # Returns the amount of samples collected line edit to 0  
-        self.experiment_name_lineshow.setText("EXPERIMENT NAME")
+        self.experiment_name_lineshow.setText("EXPERIMENT NAME")                                                # Returns the name text to 'Experiment Name'
 
     def cancel_advanced_function(self):
         self.frequency_config_area.setEnabled(True)                                                             # Enables all the configuration tab
         self.channel_config_area.setEnabled(True)                                                               # Enables all the configuration tab                                                  
         self.record_config_area.setEnabled(True)                                                                # Enables all the configuration tab
         self.advanced_frame.setEnabled(False)                                                                   # Disables the record tab
-        self.command_message_lineedit.setText('Type here')
-        self.command_answer_lineedit.setText('')
+        self.command_message_lineedit.setText('Type here')                                                      # Returns the command message text to 'Type here'
+        self.command_answer_lineedit.setText('')                                                                # Cleans the answer line
         self.tabWidget.setCurrentIndex(0)                                                                       # Changes to configuration tab                                                                          
         
     def closeEvent(self, event):                                                                    
         super(interface_visual_gui, self).closeEvent(event)                                                     # Defines the close event                                                             
-        self.stop_timers_function()        
+        self.stop_timers_function()                                                                             # Stops the timers
         try:                                                                                                    # Trys to close the view mode
             self.data_worker.finish_record()                                                                    # Closes the usb port thread
-        except:                                                                                                # If the threads do not exists
+        except:                                                                                                 # If the threads do not exists
             QCoreApplication.instance().quit                                                                    # Quits of the window                
 
     def plot_viewer_function(self):
         #self.plot_viewer.setDownsampling(ds=4, auto=True, mode='mean')
         
-        self.plot_viewer.setBackground(None)
-        self.plot_viewer.setLimits(xMin = 0, yMin = 0, xMax = 4, yMax = 33)
-        self.plot_viewer.setXRange(0, 4, padding=0.0001)
-        self.plot_viewer.setYRange(0, 33, padding=-0.001)
+        self.plot_viewer.setBackground(None)                                                                    # Sets the plot background
+        self.plot_viewer.setLimits(xMin = 0, yMin = 0, xMax = 4, yMax = 33)                                     # Sets the plot limits 
+        self.plot_viewer.setXRange(0, 4, padding=0.0001)                                                        # Sets the X axis range and scale
+        self.plot_viewer.setYRange(0, 33, padding=-0.001)                                                       # Sets the Y axis range and scale
         
-        y_axis = self.plot_viewer.getAxis('left')
-        y_axis.setStyle(tickLength=0, showValues=True)
+        y_axis = self.plot_viewer.getAxis('left')                                                               # Sets the Y axis to left
+        y_axis.setStyle(tickLength=0, showValues=True)                                                          # Sets without ticks and with values
         
-        x_axis = self.plot_viewer.getAxis('bottom')
-        x_axis.setStyle(tickLength=10, showValues=True)
+        x_axis = self.plot_viewer.getAxis('bottom')                                                             # Sets the X axis to bottom
+        x_axis.setStyle(tickLength=10, showValues=True)                                                         # Sets ticks lenght and values on
         
-        label_style = {'family':'DejaVu Sans', 'color': '#969696', 'font-size': '10pt', 'font-weight': 'bold'}
-        self.plot_viewer.setLabel('bottom', "Time [seconds]", **label_style)
-        self.plot_viewer.setLabel('left', "Channels", **label_style)
+        label_style = {'family':'DejaVu Sans', 'color': '#969696', 'font-size': '10pt', 'font-weight': 'bold'}  # Sets the label
+        self.plot_viewer.setLabel('bottom', "Time [seconds]", **label_style)                                    # Sets the X axis subtitle
+        self.plot_viewer.setLabel('left', "Channels", **label_style)                                            # Sets th Y axis subtitle
         
-        y_ticks_length = range(1,33)
-        y_axis.setTicks([[(v, str(v)) for v in y_ticks_length]])
+        y_ticks_length = range(1,33)                                                                            # Sets y Axis range to 32 channels
+        y_axis.setTicks([[(v, str(v)) for v in y_ticks_length]])                                                # Fixes the axis at integer values referring to the channels
 
-        font = QtGui.QFont()
-        font.setPixelSize(10)
-        font.setBold(True)
-        font.setFamily("DejaVu Sans")
-        x_ticks = self.plot_viewer.getAxis("bottom")
-        y_ticks = self.plot_viewer.getAxis("left")
-        x_ticks.setStyle(tickFont = font)
-        y_ticks.setStyle(tickFont = font)
-        x_ticks.setPen('#969696')
-        y_ticks.setPen('#969696')
-        x_ticks.setTextPen('#969696')
-        y_ticks.setTextPen('#969696')
-        x_ticks.setStyle(tickTextOffset = 10)
-        y_ticks.setStyle(tickTextOffset = 10)
+        font = QtGui.QFont()                                                                                    # Uses the QtGui fonts
+        font.setPixelSize(10)                                                                                   # Sets pixel size
+        font.setBold(True)                                                                                      # Sets the bold font
+        font.setFamily("DejaVu Sans")                                                                           # Sets the family font
+        x_ticks = self.plot_viewer.getAxis("bottom")                                                            # Sets the X axis ticks position
+        y_ticks = self.plot_viewer.getAxis("left")                                                              # Sets the Y axis ticks position
+        x_ticks.setStyle(tickFont = font)                                                                       # Sets the X axis ticks font
+        y_ticks.setStyle(tickFont = font)                                                                       # Sets the Y axis ticks font
+        x_ticks.setPen('#969696')                                                                               # Sets the X axis color
+        y_ticks.setPen('#969696')                                                                               # Sets the Y axis color
+        x_ticks.setTextPen('#969696')                                                                           # Sets the X axis text color
+        y_ticks.setTextPen('#969696')                                                                           # Sets the Y axis text color
+        x_ticks.setStyle(tickTextOffset = 10)                                                                   # Sets the spacing between tick text and X axis
+        y_ticks.setStyle(tickTextOffset = 10)                                                                   # Sets the spacing between tick text and Y axis
 
-        range_ = self.plot_viewer.getViewBox().viewRange() 
-        self.plot_viewer.getViewBox().setLimits(xMin=range_[0][0], xMax=range_[0][1], yMin=range_[1][0], yMax=range_[1][1])  
+        range_ = self.plot_viewer.getViewBox().viewRange()                                                                       # Sets the range 
+        self.plot_viewer.getViewBox().setLimits(xMin=range_[0][0], xMax=range_[0][1], yMin=range_[1][0], yMax=range_[1][1])      # Sets max and min limits on axis
 
 #%% INITIALIZANTION FUNCTION
 

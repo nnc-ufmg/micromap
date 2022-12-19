@@ -8,9 +8,9 @@ from os import walk
 from open_ephys.analysis import Session
 import mne
 
-file_pc = "G:\\Outros computadores\\Desktop\\GitHub\\acquisition_system\\validation\\daq_pc_27-10-2022\\"
-file_rpi = "G:\\Outros computadores\\Desktop\\GitHub\\acquisition_system\\validation\\nnc_rpi_27-10-2022\\"
-file_open_ehpys = "G:\\Outros computadores\\Desktop\\GitHub\\acquisition_system\\validation\\openephys_27-10-2022\\"
+file_pc = "F:\\data\\micromap_validation\\validation\\daq_pc_27-10-2022\\"
+file_rpi = "F:\\data\\micromap_validation\\validation\\nnc_rpi_27-10-2022\\"
+file_open_ehpys = "F:\\data\\micromap_validation\\validation\\openephys_27-10-2022\\"
 
 files_pc = next(walk(file_pc), (None, None, []))[2]
 files_pc = [file_pc + file for file in files_pc]
@@ -64,6 +64,10 @@ class read_nnc():
         self.rate = new_rate
 
 # class read_openephys_0():
+# '''
+# This class is not working yet. The way to get the sample in .get_samples() is failing.
+# '''
+
 #     def __init__(self, file, file_number):
 #         print(file[file_number])
         
@@ -153,7 +157,7 @@ class analysis():
 
         fig, (ax_nnc, ax_ope, ax_corr) = plt.subplots(3, 1, figsize=(4.8, 4.8))
         ax_nnc.plot(self.nnc_data[0][:4000])
-        ax_nnc.set_title(self.experiment_name + '\n\n' + 'NNC DAQ')
+        ax_nnc.set_title(self.experiment_name + '\n\n' + 'MicroMAP')
         ax_nnc.set_xlabel('Sample Number')
         ax_nnc.set_ylabel('uV')
         ax_ope.plot(self.openephys_data[0][:4000])
@@ -175,12 +179,13 @@ class analysis():
         plt.title(self.experiment_name)
         plt.show()
 
-    def average_window(self):
+    def average_window(self, sampling_frequency):
+        window = int(sampling_frequency/10)
         heart_beat_nnc = []
         for a in range(0, self.num_channels):
             peaks_nnc = find_peaks(self.nnc_data[a], height=180, distance=300)
             for peak in peaks_nnc[0][1:-1]:
-                heart_beat_nnc.append(list(self.nnc_data[a][peak-200:peak+200]))
+                heart_beat_nnc.append(list(self.nnc_data[a][peak-window:peak+window]))
 
         heart_beat_nnc = numpy.array(heart_beat_nnc)
         self.average_nnc = numpy.mean(heart_beat_nnc, axis=0)
@@ -189,7 +194,7 @@ class analysis():
         for a in range(0, self.num_channels):
             peaks_openephys = find_peaks(self.openephys_data[a], height=180, distance=300)
             for peak in peaks_openephys[0][1:-1]:
-                heart_beat_openephys.append(list(self.openephys_data[a][peak-200:peak+200]))
+                heart_beat_openephys.append(list(self.openephys_data[a][peak-window:peak+window]))
 
         heart_beat_openephys = numpy.array(heart_beat_openephys)
         self.average_openephys = numpy.mean(heart_beat_openephys, axis=0)
@@ -202,11 +207,12 @@ class analysis():
         ax.margins(0, 0.1)
         ax.margins(0, 0.1)
         ax.legend(['NNC DAQ','Open Ephys'])
-        plt.title(self.experiment_name)
+        #plt.title(self.experiment_name)
+        plt.savefig(self.experiment_name + '.png')
         fig.tight_layout()
-        plt.show()
+        #plt.show()
 
-file_number = 0  
+file_number = 12  
 
 open_ephys = read_openephys(files_openehpys, file_number)
 
@@ -226,7 +232,7 @@ if file_number <= 7:
 else:
     nnc = read_nnc(files_pc, file_number - 8, num_channels, sample_frequency)
     #nnc.bandpass_filter(0.1, 50)
-    if file_number == 11:
+    if file_number == 12:
         nnc.rate = 2000
         nnc.resample(1000)
     experiment_name = files_pc[file_number - 8].rsplit('\\', 1)[1].rsplit('.', 1)[0]
@@ -234,8 +240,7 @@ else:
     experiment_name = experiment_name.upper()
 
 comparision = analysis(nnc, open_ephys, experiment_name)
-comparision.plot_all()
-comparision.correlaction(0)
-comparision.average_window()
+#comparision.plot_all()
+#comparision.correlaction(0)
+comparision.average_window(nnc.rate)
 
-pass

@@ -1,5 +1,5 @@
 Micromap modules overview
-========
+=========================
 
 .. toctree::
    :maxdepth: 4

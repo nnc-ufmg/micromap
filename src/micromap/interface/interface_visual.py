@@ -26,6 +26,7 @@ Version 1.0.1
 Releases
 Version 1.0.2
 - Addition of functions to cammand the microcontroller
+
 '''
 
 #%% IMPORTS

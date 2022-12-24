@@ -1,7 +1,7 @@
 Micromap modules overview
 =========================
 
-.. toctree::
-   :maxdepth: 4
-
-   micromap
+.. autoclass:: micromap.interface.interface_functions
+   :members:
+   :undoc-members:
+   :show-inheritance:

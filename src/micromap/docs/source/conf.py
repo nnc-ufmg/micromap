@@ -19,7 +19,9 @@ version = '0.1'
 
 extensions = [
     'sphinx.ext.duration',
-    'sphinx.ext.autodoc',
+    'sphinx.ext.autodoc', 
+    'sphinx.ext.coverage', 
+    'sphinx.ext.napoleon'
 ]
 
 # -- Options for HTML output

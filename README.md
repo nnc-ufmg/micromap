@@ -2,7 +2,7 @@ MicroMAP: Low cost, high performance package for electrophysiological recording
 ===============================================================================
 <div align="center">
     <img
-     src="src/micromap/docs/source/img/logo.png"
+     src="docs/source/img/logo.png"
      style="max-width: 50%; height: 50%;"
      alt="MicroMAP software"
 

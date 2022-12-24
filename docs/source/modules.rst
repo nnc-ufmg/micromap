@@ -1,4 +1,4 @@
-Micromap API overview
+Micromap API
 =========================
 
 .. centered:: **MicroMAP** is separated into two main parts: 
@@ -13,7 +13,6 @@ Micromap API overview
 ------------------------
 .. toctree::
     :hidden:
-    :caption: API
 
     /modules/interface_functions.rst
 
@@ -43,15 +42,12 @@ The module that contains all the functions and classes that are used to create a
 
 .. toctree::
     :hidden:
-    :caption: API
 
     /modules/interface_visual.rst
 
 
-**Overview**
-
 .. toctree::
-    :caption: API
+    :caption: Overview
 
     /modules/interface_visual.rst
     /modules/interface_functions.rst

@@ -1,33 +1,30 @@
-'''
-ELECTROPHYSIOLOGICAL DATA ACQUISITION SYSTEM
+# ELECTROPHYSIOLOGICAL DATA ACQUISITION SYSTEM
 
-This code is the configuration part of the electrophysiology recording 
-system. This partition contains the front-end, in which the user will be able 
-to choose acquisition parameters such as sampling frequency, filters and number 
-of channels.
+# This code is the configuration part of the electrophysiology recording 
+# system. This partition contains the front-end, in which the user will be able 
+# to choose acquisition parameters such as sampling frequency, filters and number 
+# of channels.
 
-Author: 
-    João Pedro Carvalho Moreira
-    Belo Horizonte, Minas Gerais, Brasil
-    Graduated in Eletrical Engineer, UFSJ
-    Mastering in Eletrical Engineer, UFMG
-    Member of Núcleo de Neurociências, UFMG
+# Author: 
+#     João Pedro Carvalho Moreira
+#     Belo Horizonte, Minas Gerais, Brasil
+#     Graduated in Eletrical Engineer, UFSJ
+#     Mastering in Eletrical Engineer, UFMG
+#     Member of Núcleo de Neurociências, UFMG
 
-Advisor: 
-    Márcio Flávio Dutra Moraes
+# Advisor: 
+#     Márcio Flávio Dutra Moraes
 
-Version 1.0.2
+# Version 1.0.2
 
-Releases
-Version 1.0.1
-- Addition of advanced record programming
-- Addition of stop/start button
+# Releases
+# Version 1.0.1
+# - Addition of advanced record programming
+# - Addition of stop/start button
 
-Releases
-Version 1.0.2
-- Addition of functions to cammand the microcontroller
-
-'''
+# Releases
+# Version 1.0.2
+# - Addition of functions to cammand the microcontroller
 
 #%% IMPORTS
 

@@ -1,31 +1,29 @@
-'''
-ELECTROPHYSIOLOGICAL DATA ACQUISITION SYSTEM
+# ELECTROPHYSIOLOGICAL DATA ACQUISITION SYSTEM
 
-Code of functions linked to the electrophysiological recording system interface. 
-This partition contains the backend of the visual interface, in which the 
-parameters programmed by the user will be processed, allocated and modified.
+# Code of functions linked to the electrophysiological recording system interface. 
+# This partition contains the backend of the visual interface, in which the 
+# parameters programmed by the user will be processed, allocated and modified.
 
-Author: 
-    João Pedro Carvalho Moreira
-    Belo Horizonte, Minas Gerais, Brasil
-    Graduated in Eletrical Engineer, UFSJ
-    Mastering in Eletrical Engineer, UFMG
-    Member of Núcleo de Neurociências, UFMG
+# Author: 
+#     João Pedro Carvalho Moreira
+#     Belo Horizonte, Minas Gerais, Brasil
+#     Graduated in Eletrical Engineer, UFSJ
+#     Mastering in Eletrical Engineer, UFMG
+#     Member of Núcleo de Neurociências, UFMG
 
-Advisor: 
-    Márcio Flávio Dutra Moraes
+# Advisor: 
+#     Márcio Flávio Dutra Moraes
 
-Version 1.0.2
+# Version 1.0.2
 
-Releases
-Version 1.0.1
-- Addition of advanced record programming
-- Addition of stop/start button
+# Releases
+# Version 1.0.1
+# - Addition of advanced record programming
+# - Addition of stop/start button
 
-Releases
-Version 1.0.2
-- Addition of functions to cammand the microcontroller
-'''
+# Releases
+# Version 1.0.2
+# - Addition of functions to cammand the microcontroller
 
 import matplotlib
 import serial

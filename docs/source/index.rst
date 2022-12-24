@@ -1,3 +1,5 @@
+MicroMAP
+========
 .. figure:: img/logo.png
    :align: center
    :width: 50%

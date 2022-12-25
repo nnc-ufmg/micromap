@@ -1,0 +1,8 @@
+    pyqt5
+    scikit-image
+    pandas
+    numpy
+    matplotlib
+    scipy
+    pyserial
+    pyqtgraph

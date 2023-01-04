@@ -9,7 +9,7 @@ sys.path.insert(0, os.path.abspath('../../src'))
 # -- Project information
 
 project = 'MicroMAP'
-copyright = '2022, João Pedro C. Moreira'
+copyright = '2023, João Pedro C. Moreira'
 author = 'João Pedro C. Moreira '
 
 release = '0.1'

@@ -37,6 +37,7 @@ import struct
 import collections
 import micromap.interface.interface_functions as interface_functions    
 import os
+import platform
 from datetime import datetime, timedelta
 from PyQt5 import QtWidgets, uic    
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, QCoreApplication, QTimer
@@ -293,8 +294,15 @@ class interface_visual_gui(QMainWindow):
         '''
         super(interface_visual_gui, self).__init__()                                                            # Calls the inherited classes __init__ method
         QMainWindow.__init__(self)                                                                              # Creates the main window
-        self.interface = uic.loadUi(os.path.dirname(__file__) + "\\interface_gui.ui", self)                     # Loads the interface design archive (made in Qt Designer)
-                
+
+        if platform.system() == 'Linux':
+            self.interface = uic.loadUi(os.path.dirname(__file__) + "/interface_gui.ui", self)                     # Loads the interface design archive (made in Qt Designer)
+
+        elif platform.system() == 'Windows':
+            self.interface = uic.loadUi(os.path.dirname(__file__) + "\\interface_gui.ui", self)                     # Loads the interface design archive (made in Qt Designer)
+
+
+
         self.plot_viewer_function()                                                                             # Calls the plot viewer function
         self.showMaximized()                                                                                    # Maximizes the interface window
         self.show()                                                                                             # Shows the interface to the user
@@ -613,8 +621,6 @@ class interface_visual_gui(QMainWindow):
         self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)                           # Configures the USB connection
         self.usb.connect()                                                                                      # Connect the USB port
         
-        print(self.options.resume_options())                                                                    # Prints the resume options
-        
         self.usb.set_sampling_frequency(self.options.sampling_frequency)                                        # Sets the sampling frequency
         self.usb.set_highpass_frequency(self.highpass_frequency_slider.value())                                 # Sets the Highpass Filter frequency
         self.usb.set_lowpass_frequency(self.lowpass_frequency_slider.value())                                   # Sets the Lowpass Filter frequency
@@ -775,7 +781,6 @@ class interface_visual_gui(QMainWindow):
         self.options.is_recording_mode = False                                                                  # Changes the recording mode flag to 'false'
         self.options.save_directory = "None"                                                                    # Change the save directory on main variables dictionary
         
-        print(self.options.record_time)                                                                         # Prints the recorded time
         text = str('Data acquisition completed successfully \n\n' +
                    'Duration: {}\n'.format(timedelta(seconds = round(self.options.record_time))))               # Text to be showed in warning message
         self.warning_message_function(text)                                                                     # Shows a warning message
@@ -943,7 +948,6 @@ class interface_visual_gui(QMainWindow):
             self.time_hour_spinbox.setValue(1)                                                                  # Clears the hours selection    
             self.time_min_spinbox.setValue(0)                                                                   # Clears the minutes selection
             self.time_sec_spinbox.setValue(0)                                                                   # Clears the seconds selection
-            self.auto_save_button.setChecked(False)                                                             # Clears the auto save selection
             self.check_all_button.setText("Check All")                                                          # Clears the "Unchecked All" or "Check All" selection  
             self.chip_function()                                                                                # Calls the function to update the interface
             self.sampling_frequency_function()                                                                  # Calls the function to update the interface    

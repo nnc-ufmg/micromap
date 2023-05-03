@@ -1,21 +1,22 @@
 clc 
 clear
 
-file = fopen("G:\Outros computadores\Desktop\GitHub\acquisition_system\validation\nnc_rpi_27-10-2022\ecg_1000_1-5ch_1min.bin",'r');
+file = fopen("C:\Users\mcjpe\Desktop\test_0.bin",'r');
 %fseek(file, -12800000000, "eof");
 data_raw = fread(file, 'integer*2=>signed', 'ieee-le');
 %data_char = fread(file, 'char', 'ieee-be');
 fclose(file);
 
-data = reshape(data_raw, 5, []);
+num_channels = 3;
+data = reshape(data_raw, num_channels, []);
 
 data = 0.195*data;
 
 figure(1)
-for a = 1:5
-    subplot(3,2, a)
+for a = 1:num_channels
+    subplot(2,2, a)
     plot(data(a,:))
-    ylim([-1000, 1000])
+    %ylim([-1000, 1000])
 end
 hold on
 

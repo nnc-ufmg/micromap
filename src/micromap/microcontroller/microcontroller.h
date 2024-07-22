@@ -27,6 +27,7 @@ extern void stop_acquisition();
 #include "DueTimer.h"
 #include "spi_usart.h" 
 #include "rhd_functions.h"
+#include "ads1298_novo.h"
 
 /*  GLOBAL VARIABLE
  *  Defines variables that will be used in another parts of the program
@@ -34,6 +35,7 @@ extern void stop_acquisition();
 bool transfer_data_flag = false;
 void acquisition_interrupt();
 intan_rhd_chip_class intan_rhd_chip;
+ads_1298_chip_class ads_1298_chip;
 
 /*  START ACQUISITION
  *  This function starts the thread that will be in charge of making records at regular intervals
@@ -43,9 +45,7 @@ intan_rhd_chip_class intan_rhd_chip;
  */
 void start_acquisition(uint16_t sampling_frequency)
 {
-  Timer4.attachInterrupt(acquisition_interrupt);    // Defines the interrupt/worker function for the thread
-  Timer4.setFrequency(sampling_frequency);          // Configures the frequency that the thread will be called
-  Timer4.start();                                   // Starts the thread
+  attachInterrupt(digitalPinToInterrupt(ads_1298_chip.data_ready), acquisition_interrupt, FALLING);
 }
 
 /*  INTERRUPT FOR DATA ACQUISITION
@@ -54,7 +54,7 @@ void start_acquisition(uint16_t sampling_frequency)
 void acquisition_interrupt()
 {
   noInterrupts();                                   // Locks any other interrupt on Arduino
-  intan_rhd_chip.convert_channels();                // Acquires the channels that are connected
+  ads_1298_chip.convert_channels();
   interrupts();                                     // Unlocks any other interrupt on Arduino
 } 
 
@@ -63,5 +63,5 @@ void acquisition_interrupt()
  */
 void stop_acquisition()
 {
-  Timer4.stop();                                    // Stops the thread
+  detachInterrupt(digitalPinToInterrupt(ads_1298_chip.data_ready));                                    // Stops the thread
 }

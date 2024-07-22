@@ -293,6 +293,7 @@ uint16_t intan_rhd_chip_class::read(uint16_t register_number)
 {
   uint16_t mask = 0xC000; //Mask -> 11XXXXXXXXXXXXXX = 1100000000000000
   uint16_t writecommand = mask | (register_number << 8);
+  
   return(transfer_data(writecommand));
 }
 
@@ -503,7 +504,7 @@ void intan_rhd_chip_class::steup_spi(int p_serial_pinout, int p_sync_pinout)
   pinMode(serial_pinout, OUTPUT);                                 // Defines the pin mode
   pinMode(sync_pinout, OUTPUT);                                   // Defines the pin mode
   SPI.begin();                                                    // Starts the SPI bus   
-
+  
   REG_SPI0_CR = SPI_CR_SWRST;                                     // Resets SPI
   REG_SPI0_CR = 0x1;                                              // Turns the SPI enable
   REG_SPI0_MR = SPI_MR_MODFDIS|0x00000001;                        // Sets master and no modefault

@@ -40,7 +40,7 @@ import os
 import platform
 from datetime import datetime, timedelta
 from PyQt5 import QtWidgets, uic    
-from PyQt5.QtCore import QObject, QThread, pyqtSignal, QCoreApplication, QTimer
+from PyQt5.QtCore import QObject, QThread, pyqtSignal, QCoreApplication, QTimer, QThreadPool, QRunnable
 from PyQt5.QtWidgets import QMessageBox, QMainWindow
 from tkinter import Tk 
 from tkinter.filedialog import (asksaveasfilename as save_dir_popup)
@@ -51,7 +51,7 @@ import pyqtgraph
 
 #%% PLOT DATA CLASS
 
-class plot_data_class(QObject):
+class plot_data_class_rhd(QRunnable):
     '''Plot data class 
     
     This class is a worker that will be inserted into a Thread. The functions of this class 
@@ -64,7 +64,7 @@ class plot_data_class(QObject):
         plot_viewer: Is the object that represents the plot viewer in the interface.
         
     '''
-    finished = pyqtSignal()                                                                         # Signal that will be output to the interface when the function is complited
+    finished = pyqtSignal()                                                                         # Signal that will be output to the interface when the function is completed
     
     def __init__(self, plot_viewer, options, buffer):                                               # Initializes when the thread is started
         '''__INIT__ 
@@ -78,7 +78,7 @@ class plot_data_class(QObject):
             buffer: It is the buffer where the data of the last second of the acquisition is stored.
         
         '''
-        super(plot_data_class, self).__init__()                                                                             # Super declaration
+        super(plot_data_class_rhd, self).__init__()                                                                             # Super declaration
         self.plot_viewer = plot_viewer                                                                                      # Sets the the interface plot widget as self variable
         self.options = options                                                                                              # Sets the options as self variable
         self.buffer = buffer                                                                                                # Sets the buffer as self variable
@@ -103,6 +103,7 @@ class plot_data_class(QObject):
         This public function will plot the last 4 seconds of record on the interface in real 
         time, updating the values every second
         '''
+        print(self.buffer)
         byte_data = bytearray(b''.join(self.buffer))                                                                        # Gets all packages in buffer and puts on single binary list
         integer_data = struct.unpack(self.unpack_format, byte_data)                                                         # Transforms binary data in integer with the string in format "self.unpack_format" (two's complement little edian)          
         micro_volts_data = 500*(0.195e-6)*numpy.array(integer_data)                                                         # Transforms data to Volts (0.195*1e-6 -> datasheet) and adds a scale factor to plot (100 -> arbitrary)
@@ -134,9 +135,107 @@ class plot_data_class(QObject):
         '''
         self.finished.emit()                                                                                                # Emits the finish signal to closes the thread
 
+class plot_data_class_ads(QRunnable):
+    '''Plot data class 
+    
+    This class is a worker that will be inserted into a Thread. The functions of this class 
+    aim to make the interface graphics and have two main features, one for real-time plots 
+    and another for plots executed by interface buttons.
+    
+    Attributes:
+        file: Open file in which the records are being saved.
+        option: The option dictionary that contains all record configurations.
+        plot_viewer: Is the object that represents the plot viewer in the interface.
+        
+    '''
+    finished = pyqtSignal()                                                                         # Signal that will be output to the interface when the function is complited
+    
+    def __init__(self, plot_viewer, options, buffer):                                               # Initializes when the thread is started
+        '''__INIT__ 
+        
+        This private function is executed when the class is called, and all parameters are
+        defined here
+        
+        Args: 
+            plot_viewer: Is the object that represents the plot viewer in the interface.
+            options: The option dictionary that contains all record configurations.
+            buffer: It is the buffer where the data of the last second of the acquisition is stored.
+        
+        '''
+        super(plot_data_class_ads, self).__init__()                                                                         # Super declaration
+        self.plot_viewer = plot_viewer                                                                                      # Sets the the interface plot widget as self variable
+        self.options = options                                                                                              # Sets the options as self variable
+        self.buffer = buffer                                                                                                # Sets the buffer as self variable
+        
+        self.channels = self.options.channels                                                                               # Gets the channels that will be recorded
+        self.number_channels = self.options.number_channels                                                                 # Gets the number of channels that will be recorded
+        self.channel_count = list(range(0, self.number_channels))                                                           # Creates a vector with the number of channels lenght        
+                
+        self.atualization_time = 4                                                                                          # Total time in seconds to show in plot (default: 4 seconds)
+        self.plot_length = self.atualization_time*self.options.sampling_frequency                                           # Total data length to be plotted per channel in "atualization_time"
+        self.bytes_to_plot = self.options.number_channels*self.options.sampling_frequency                                   # Total data length to be plotted
+        self.time_in_seconds = numpy.linspace(0, self.atualization_time, self.plot_length)                                  # Time vector in seconds
+        
+        self.plot_pen = mkPen('#D88A8A', width=0.8)                                                                         # Sets the plot pen 
+        self.clear_plot()                                                                                                   # Calls the clear plot function
+        self.setup_plot()                                                                                                   # Calls the setup plot function
+                                
+    def plot(self):
+        '''Plot
+        
+        This public function will plot the last 4 seconds of record on the interface in real 
+        time, updating the values every second
+        '''
+
+        hex_data = [[],[],[],[],[],[],[],[]]                                                                                # Sample sequence for each channel
+
+        for sample in self.buffer:
+            sample_data = sample.hex()                                                                                      
+            sample_data = sample_data[14:] + sample_data[:8]                                                                # One ordered complete sample (status word removed) 
+            for count in range(8):
+                hex_data[count].append(sample_data[(count*6):(count*6)+6])                                                  # Splices the sample and assigns the appropriate hex values to each channel
+
+        volt_data = [[],[],[],[],[],[],[],[]]                                                                               # Array to hold converted values for each channel
+        for index, channel in enumerate(hex_data):
+            values = channel
+            for value in values:
+                new_value = int(value,16)                                                                                   # Convert string to hex
+                if new_value & 0x800000:                                                                                    # Check if the sign bit is set
+                    new_value = (new_value - 2**24) * 7.9473e-8
+                else:
+                    new_value = new_value * 7.9473e-8   
+                volt_data[index].append(new_value)
+
+        for channel in self.channel_count:                                                                                  # Organize data for each channel
+            self.data_matrix[channel].extend(self.channels[channel] + volt_data[channel])
+            self.lines[channel].setData(self.time_in_seconds, self.data_matrix[channel])
+
+    def clear_plot(self):
+        '''Clear plot
+        
+        This public function resets the plot to initial configurations
+        '''
+        self.plot_viewer.clear()
+        
+    def setup_plot(self):
+        self.data_matrix = []                                                                                               # Initializes the data matrix to be plotted (each row is a channel)
+        self.lines = []                                                                                                     # Initializes a line matrix to be plotted in the begging of acquisition (each row have only "0" = value of the channel)
+        for i in self.channel_count:                                                                                        # Creates a row in the matrix for each active channel 
+            self.data_matrix.append(collections.deque(maxlen = self.plot_length))                                           # Creates 1 circular buffer to all channels with length of 5 seconds of record                             
+            for j in range(0, self.plot_length):                                                                            # For all columns in each row
+                self.data_matrix[i].append(self.channels[i])                                                                # Puts the value of the channel (ex: for the channel 6, the row have only 6 to be plotted in correct place)
+            self.lines.append(self.plot_viewer.plot(self.time_in_seconds, self.data_matrix[i], pen = self.plot_pen))        # Plots lines in interface
+        
+    def finish_plot(self):
+        '''Finish plot
+        
+        This public function will emit the command to finish the thread 
+        '''
+        self.finished.emit()                                                                                                # Emits the finish signal to closes the thread
+
 #%% RECEIVE DATA CLASS
     
-class receive_data_class(QObject):
+class receive_data_class(QRunnable):
     ''' Receive data class
     
     This class is a worker that will be inserted into a Thread. The functions of this class
@@ -170,7 +269,11 @@ class receive_data_class(QObject):
         self.sampling_frequency = options.sampling_frequency                                                    # Gets the sampling frequency value
         self.number_channels = options.number_channels                                                          # Gets the number of channels to be recorded
         
-        self.bytes_to_read = int(2*options.number_channels)                                                     # Number of bytes to be read at a time (in this case, at a time will be read 1 sample = 2 bytes per channel)          
+        if options.chip == 'ADS1298':
+            self.bytes_to_read = int(3*options.number_channels + 3)                                             # Number of bytes to be read at a time (in this case, at a time will be read (1 header with 3 bytes (#C00000)) and 3 bytes per channel)
+        else:
+            self.bytes_to_read = int(2*options.number_channels)                                                 # Number of bytes to be read at a time (in this case, at a time will be read 1 sample = 2 bytes per channel)          
+        
         self.buffer_length = options.sampling_frequency                                                         # Buffer length to store 1 second of record
         self.buffer = collections.deque(maxlen = self.buffer_length)                                            # Circular buffer to store 1 second of record
         
@@ -179,7 +282,10 @@ class receive_data_class(QObject):
         self._change_directory = False                                                                          # Signal that changes the directory is false
         
         self.plot_data_thread = QThread()                                                                       # Creates a QThread object to plot the received data
-        self.plot_data_worker = plot_data_class(self.plot_viewer, self.options, self.buffer)                    # Creates a worker object named plot_data_class
+        if options.chip == 'ADS1298':
+            self.plot_data_worker = plot_data_class_ads(self.plot_viewer, self.options, self.buffer)            # Creates a worker object named plot_data_class_rhd
+        else:
+            self.plot_data_worker = plot_data_class_rhd(self.plot_viewer, self.options, self.buffer)            # Creates a worker object named plot_data_class_ads
         self.plot_data_worker.moveToThread(self.plot_data_thread)                                               # Moves the class to the thread
         self.plot_data_worker.finished.connect(self.plot_data_thread.quit)                                      # When the process is finished, this command quits the worker
         self.plot_data_worker.finished.connect(self.plot_data_thread.wait)                                      # When the process is finished, this command waits the worker to finish completely
@@ -254,7 +360,7 @@ class receive_data_class(QObject):
         self.finished.emit()                                                                                    # Emits the finish signal
         
     def plot(self):
-        self.plot_data_worker.plot()                                                                            # Calls the function in plot_data_class (another thread) to plot the data 
+        self.plot_data_worker.plot()                                                                            # Calls the function in plot_data_class_rhd (another thread) to plot the data 
     
     def change_direcotory_function(self):
         self._change_directory = True                                                                           # Signal that change the directory is true
@@ -303,7 +409,7 @@ class interface_visual_gui(QMainWindow):
 
 
 
-        self.plot_viewer_function()                                                                             # Calls the plot viewer function
+        self.plot_viewer_function(33)                                                                             # Calls the plot viewer function
         self.showMaximized()                                                                                    # Maximizes the interface window
         self.show()                                                                                             # Shows the interface to the user
 
@@ -311,6 +417,8 @@ class interface_visual_gui(QMainWindow):
         # This dictionary is the output variable of the interface to start the record
         self.options = interface_functions.acquisition()
         
+        self.thread_pool = QThreadPool()
+
         # INTERFACE INTERACTIONS
         # Record configuration interactions
         self.chip_combobox.currentIndexChanged.connect(self.chip_function)                                      # Called when chip combobox is changed
@@ -370,6 +478,9 @@ class interface_visual_gui(QMainWindow):
             self.channel_32_area.setEnabled(False)                                                              # Disables channels 17 - 32
             self.options.chip = "RHD2216"                                                                       # Changes the chip on main variables dictionary 
             self.chip_lineshow.setText("RHD2216")                                                               # Changes the line edit (Record tab) in the interface
+            self.plot_viewer_function(17)
+            self.showMaximized()                                                                                    # Maximizes the interface window
+            self.show()                                                                                             # Shows the interface to the user
         elif chip == 1:                                                                                         # If is selected RHD2132    
             self.highpass_frequency_slider.setEnabled(True)                                                     # Enables high pass filter cutting frequency slider
             self.highpass_frequency_function()                                                                  # Calls the frequency function to update the information
@@ -379,6 +490,9 @@ class interface_visual_gui(QMainWindow):
             self.channel_32_area.setEnabled(True)                                                               # Enables channels 17 - 32
             self.options.chip = "RHD2132"                                                                       # Changes the chip on main variables dictionary
             self.chip_lineshow.setText("RHD2132")                                                               # Changes the line edit (Record tab) in the interface
+            self.plot_viewer_function(33)
+            self.showMaximized()                                                                                    # Maximizes the interface window
+            self.show()                                                                                             # Shows the interface to the user
         elif chip == 2:                                                                                         # If is selected ADS1298
             self.highpass_frequency_slider.setEnabled(False)                                                    # Disables high pass filter cutting frequency slider
             self.highpass_frequency_lineshow.setText("--")                                                      # Changes the line edit (Record tab) in the interface                        
@@ -388,6 +502,9 @@ class interface_visual_gui(QMainWindow):
             self.channel_32_area.setEnabled(False)                                                              # Disables channels 17 - 32
             self.options.chip = "ADS1298"                                                                       # Changes the chip on main variables dictionary
             self.chip_lineshow.setText("ADS1298")                                                               # Changes the line edit (Record tab) in the interface
+            self.plot_viewer_function(9)
+            self.showMaximized()                                                                                    # Maximizes the interface window
+            self.show()                                                                                             # Shows the interface to the user
     
     # Function to set the sampling frequency
     def sampling_frequency_function(self):
@@ -671,7 +788,7 @@ class interface_visual_gui(QMainWindow):
         else:                                                                                                   # If the user option is "no"
             return                                                                                              # The program do nothing
     
-    def view_mode_function(self):
+    def view_mode_function(self):           # CRIAÇÃO DE THREAD --<>-- SELF.DATA_THREAD
         self.data_thread = QThread()                                                                            # Creates a QThread object to receive USB data
         self.data_worker = receive_data_class(self.plot_viewer, self.options)                                   # Creates a worker object named receive_data_class
         self.data_worker.moveToThread(self.data_thread)                                                         # Moves worker to the thread
@@ -717,15 +834,19 @@ class interface_visual_gui(QMainWindow):
         self.start_recording_button.setEnabled(False)                                                           # Disables the strat recording button
             
     def recording_mode_function(self):
-        self.data_thread = QThread()                                                                            # Creates a QThread object to receive USB data
+        # self.data_thread = QThread()                                                                            # Creates a QThread object to receive USB data
         self.data_worker = receive_data_class(self.plot_viewer, self.options)                                   # Creates a worker object named receive_data_class
-        self.data_worker.moveToThread(self.data_thread)                                                         # Moves worker to the thread
-        self.data_thread.started.connect(self.data_worker.run_recording)                                        # If the thread was started, connect to worker.run_view       
-        self.data_worker.finished.connect(self.data_thread.quit)                                                # When the process is finished, this command quits the worker
-        self.data_worker.finished.connect(self.data_thread.wait)                                                # When the process is finished, this command waits the worker to finish completely
-        self.data_worker.finished.connect(self.data_worker.deleteLater)                                         # When the process is finished, this command deletes the worker
-        self.data_thread.finished.connect(self.data_thread.deleteLater)                                         # When the process is finished, this command deletes the thread       
-        self.data_thread.start()                                                                                # Starts the thread     
+        
+        self.thread_pool.start(self.data_worker)
+
+
+        # self.data_worker.moveToThread(self.data_thread)                                                         # Moves worker to the thread
+        # self.data_thread.started.connect(self.data_worker.run_recording)                                        # If the thread was started, connect to worker.run_view       
+        # self.data_worker.finished.connect(self.data_thread.quit)                                                # When the process is finished, this command quits the worker
+        # self.data_worker.finished.connect(self.data_thread.wait)                                                # When the process is finished, this command waits the worker to finish completely
+        # self.data_worker.finished.connect(self.data_worker.deleteLater)                                         # When the process is finished, this command deletes the worker
+        # self.data_thread.finished.connect(self.data_thread.deleteLater)                                         # When the process is finished, this command deletes the thread       
+        # self.data_thread.start()                                                                                # Starts the thread     
         self.start_timers_function()                                                                            # Starts user programmed timer        
 
     def plot_recording_mode_function(self):
@@ -917,7 +1038,7 @@ class interface_visual_gui(QMainWindow):
             else:                                                                                               # If estimated progress is more than 100% 
                 self.progress_bar.setValue(100)                                                                 # Updates the progress bar to 100%
 
-#%% CONTOL FUNCTIONS
+#%% CONTROL FUNCTIONS
     
     def change_direcotory_function(self):
         self.data_worker.change_direcotory_function()
@@ -999,11 +1120,12 @@ class interface_visual_gui(QMainWindow):
         except:                                                                                                 # If the threads do not exists
             QCoreApplication.instance().quit                                                                    # Quits of the window                
 
-    def plot_viewer_function(self):
+    def plot_viewer_function(self, y_graph):
         #self.plot_viewer.setDownsampling(ds=4, auto=True, mode='mean')
         
         self.plot_viewer.setBackground(None)                                                                    # Sets the plot background
-        self.plot_viewer.setLimits(xMin = 0, yMin = 0, xMax = 4, yMax = 33)                                     # Sets the plot limits 
+        
+        self.plot_viewer.setLimits(xMin = 0, yMin = 0, xMax = 4, yMax = y_graph)                                # Sets the plot limits                
         self.plot_viewer.setXRange(0, 4, padding=0.0001)                                                        # Sets the X axis range and scale
         self.plot_viewer.setYRange(0, 33, padding=-0.001)                                                       # Sets the Y axis range and scale
         
@@ -1017,7 +1139,7 @@ class interface_visual_gui(QMainWindow):
         self.plot_viewer.setLabel('bottom', "Time [seconds]", **label_style)                                    # Sets the X axis subtitle
         self.plot_viewer.setLabel('left', "Channels", **label_style)                                            # Sets th Y axis subtitle
         
-        y_ticks_length = range(1,33)                                                                            # Sets y Axis range to 32 channels
+        y_ticks_length = range(1,y_graph)                                                                            # Sets y Axis range to 32 channels
         y_axis.setTicks([[(v, str(v)) for v in y_ticks_length]])                                                # Fixes the axis at integer values referring to the channels
 
         font = QtGui.QFont()                                                                                    # Uses the QtGui fonts
@@ -1038,12 +1160,13 @@ class interface_visual_gui(QMainWindow):
         range_ = self.plot_viewer.getViewBox().viewRange()                                                                       # Sets the range 
         self.plot_viewer.getViewBox().setLimits(xMin=range_[0][0], xMax=range_[0][1], yMin=range_[1][0], yMax=range_[1][1])      # Sets max and min limits on axis
 
-#%% INITIALIZANTION FUNCTION
+#%% INITIALIZATION FUNCTION
 
 def main(): 
   app = QtWidgets.QApplication(sys.argv)   # Create an instance of QtWidgets.QApplication
   window = interface_visual_gui()          # Create an instance of our class
   app.exec_()                              # Start the application
+
  
 if __name__ == '__main__': 
   show = main()    

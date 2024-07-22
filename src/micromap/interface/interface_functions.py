@@ -66,7 +66,7 @@ class acquisition:
     def __init__(self):       
         self.is_recording_mode = False                                           # Recording mode is "FALSE"
         self.method = "ARDUINO"                                                  # Acquisition method (Arduino, FPGA or Pi Pico) 
-        self.chip = "RHD2216"                                                    # Aquisition chip (RHD or ADS)
+        self.chip = "ADS1298"                                                    # Aquisition chip (RHD or ADS)
         self.sampling_frequency = 2000                                           # Desired sampling frequency
         self.highpass = 0.1                                                      # Desired highpass filter frequency
         self.lowpass = 20000                                                     # Desired lowpass filter frequency
@@ -238,6 +238,7 @@ class usb_singleton():
         self.port.write(command)                                                # Sends via USB port the messsage
         #request_ok = self.port.read(4)                                          # Reads the 4bytes answer message
         #return request_ok                                                       # Returns the answer message
+        print("aquisicao")
         return
     
     def stop_acquisition(self):

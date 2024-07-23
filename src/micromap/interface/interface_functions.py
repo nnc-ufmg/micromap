@@ -27,6 +27,7 @@
 
 import matplotlib
 import serial
+import numpy
 matplotlib.use('Qt5Agg')
 from numpy import where, array
 
@@ -76,6 +77,7 @@ class acquisition:
         self.seconds = 0                                                         # Desired seconds of data acquisition
         self.total_time = 3600                                                   # Total acquisition time in seconds
         self.channels = [1]*16                                                   # Channels that will be sampled in a boolean list
+        self.channels_number = range(1,17)                                       # Channels that will be sampled in a number list
         self.number_channels = 16                                                # Number of channels selected
         self.channels_bool = 'ffff'                                              # Bool list of the channels
         self.usb_port = "None"                                                   # USB port connection
@@ -155,7 +157,8 @@ class acquisition:
         self.channels = where(channels == 1)[0]                                    # Gets only the indexes that will be registered 
         self.channels = [x + 1 for x in self.channels]                             # Sets the attribute adding 1 in all elements of a list to eliminate the index 0
         self.number_channels = sum(channels_bool)                                  # Gets the number of channels selected    
-       
+        self.channels_number = numpy.where(numpy.array(self.channels) == 1)[0] + 1 # Gets the number of channels selected
+
     def get_total_time(self):
         '''Get total time
         

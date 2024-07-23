@@ -35,12 +35,13 @@ import serial.tools.list_ports
 import time
 import struct
 import collections
-import micromap.interface.interface_functions as interface_functions    
+#import micromap.interface.interface_functions as interface_functions
+import interface_functions    
 import os
 import platform
 from datetime import datetime, timedelta
 from PyQt5 import QtWidgets, uic    
-from PyQt5.QtCore import QObject, QThread, pyqtSignal, QCoreApplication, QTimer
+from PyQt5.QtCore import QObject, QThreadPool, pyqtSignal, QCoreApplication, QTimer, QRunnable, pyqtSlot
 from PyQt5.QtWidgets import QMessageBox, QMainWindow
 from tkinter import Tk 
 from tkinter.filedialog import (asksaveasfilename as save_dir_popup)
@@ -51,7 +52,22 @@ import pyqtgraph
 
 #%% PLOT DATA CLASS
 
-class plot_data_class(QObject):
+class SaveDataClass(QRunnable):
+    '''Save data class
+    
+    This class is a worker
+    '''
+    def __init__(self, file_path, buffer):
+        super().__init__()
+        self.file_path = file_path
+        self.buffer = buffer
+    
+    def run(self):
+        with open(self.file_path, 'ab') as file:
+            for data in self.buffer:
+                file.write(data)
+
+class PlotUpdaterClass(QRunnable):
     '''Plot data class 
     
     This class is a worker that will be inserted into a Thread. The functions of this class 
@@ -66,77 +82,20 @@ class plot_data_class(QObject):
     '''
     finished = pyqtSignal()                                                                         # Signal that will be output to the interface when the function is complited
     
-    def __init__(self, plot_viewer, options, buffer):                                               # Initializes when the thread is started
-        '''__INIT__ 
-        
-        This private function is executed when the class is called, and all parameters are
-        defined here
-        
-        Args: 
-            plot_viewer: Is the object that represents the plot viewer in the interface.
-            options: The option dictionary that contains all record configurations.
-            buffer: It is the buffer where the data of the last second of the acquisition is stored.
-        
-        '''
-        super(plot_data_class, self).__init__()                                                                             # Super declaration
-        self.plot_viewer = plot_viewer                                                                                      # Sets the the interface plot widget as self variable
-        self.options = options                                                                                              # Sets the options as self variable
-        self.buffer = buffer                                                                                                # Sets the buffer as self variable
-        
-        self.channels = self.options.channels                                                                               # Gets the channels that will be recorded
-        self.number_channels = self.options.number_channels                                                                 # Gets the number of channels that will be recorded
-        self.channel_count = list(range(0, self.number_channels))                                                           # Creates a vector with the number of channels lenght        
-                
-        self.atualization_time = 4                                                                                          # Total time in seconds to show in plot (default: 4 seconds)
-        self.plot_length = self.atualization_time*self.options.sampling_frequency                                           # Total data length to be plotted per channel in "atualization_time"
-        self.bytes_to_plot = self.options.number_channels*self.options.sampling_frequency                                   # Total data length to be plotted
-        self.time_in_seconds = numpy.linspace(0, self.atualization_time, self.plot_length)                                  # Time vector in seconds
-        self.unpack_format = "<" + str(int(self.bytes_to_plot)) + "h"                                                       # Format to struct.unpack( ) function reads the data (two's complement little edian)     
+    def __init__(self, main_window, buffer):
+        super().__init__()
+        self.main_window = main_window
+        self.buffer = buffer
 
-        self.plot_pen = mkPen('#D88A8A', width=0.8)                                                                         # Sets the plot pen 
-        self.clear_plot()                                                                                                   # Calls the clear plot function
-        self.setup_plot()                                                                                                   # Calls the setup plot function
-                                
-    def plot(self):
-        '''Plot
-        
-        This public function will plot the last 4 seconds of record on the interface in real 
-        time, updating the values every second
-        '''
-        byte_data = bytearray(b''.join(self.buffer))                                                                        # Gets all packages in buffer and puts on single binary list
-        integer_data = struct.unpack(self.unpack_format, byte_data)                                                         # Transforms binary data in integer with the string in format "self.unpack_format" (two's complement little edian)          
-        micro_volts_data = 500*(0.195e-6)*numpy.array(integer_data)                                                         # Transforms data to Volts (0.195*1e-6 -> datasheet) and adds a scale factor to plot (100 -> arbitrary)
-        
-        for channel in self.channel_count:                                                                                  # For all channels recorded
-            self.data_matrix[channel].extend(self.channels[channel] + micro_volts_data[channel+4::self.number_channels])    # Gets the data in Volts "channel" by "channel", puts in matrix to be plotted and for each channel add the channel number for better visualization of the data
-            self.lines[channel].setData(self.time_in_seconds,self.data_matrix[channel])                                     # Plots the respective data with set_ydata (this function only changes the data without changes the axes configurations)
-        
-    def clear_plot(self):
-        '''Clear plot
-        
-        This public function resets the plot to initial configurations
-        '''
-        self.plot_viewer.clear()
-        
-    def setup_plot(self):
-        self.data_matrix = []                                                                                               # Initializes the data matrix to be plotted (each row is a channel)
-        self.lines = []                                                                                                     # Initializes a line matrix to be plotted in the begging of acquisition (each row have only "0" = value of the channel)
-        for i in self.channel_count:                                                                                        # Creates a row in the matrix for each active channel 
-            self.data_matrix.append(collections.deque(maxlen = self.plot_length))                                           # Creates 1 circular buffer to all channels with length of 5 seconds of record                             
-            for j in range(0, self.plot_length):                                                                            # For all columns in each row
-                self.data_matrix[i].append(self.channels[i])                                                                # Puts the value of the channel (ex: for the channel 6, the row have only 6 to be plotted in correct place)
-            self.lines.append(self.plot_viewer.plot(self.time_in_seconds, self.data_matrix[i], pen = self.plot_pen))        # Plots lines in interface
-        
-    def finish_plot(self):
-        '''Finish plot
-        
-        This public function will emit the command to finish the thread 
-        '''
-        self.finished.emit()                                                                                                # Emits the finish signal to closes the thread
+    def run(self):
+        self.main_window.data_updated.emit(self.buffer)                                                                                               # Emits the finish signal to closes the thread
 
 #%% RECEIVE DATA CLASS
-    
-class receive_data_class(QObject):
+
+class WorkerSignals(QObject):
+    data_ready = pyqtSignal()                                                                         # Signal that will be output to the interface when the data is ready
+
+class ReceiveDataClass(QObject):
     ''' Receive data class
     
     This class is a worker that will be inserted into a Thread. The functions of this class
@@ -162,10 +121,10 @@ class receive_data_class(QObject):
             options: The option dictionary that contains all record configurations.
             
         '''
-        super(receive_data_class, self).__init__()                                                              # Super declaration
-        self.plot_viewer = plot_viewer                                                                          # Sets the the interface plot widget as self variable
+        super(ReceiveDataClass, self).__init__()                                                              # Super declaration
         self.options = options                                                                                  # Sets the options as self variable        
-        
+        self.plot_viewer = plot_viewer                                                                          # Sets the the interface plot widget as self variable
+                
         self.save_directory = options.save_directory                                                            # Gets the directory to save the data
         self.sampling_frequency = options.sampling_frequency                                                    # Gets the sampling frequency value
         self.number_channels = options.number_channels                                                          # Gets the number of channels to be recorded
@@ -178,87 +137,38 @@ class receive_data_class(QObject):
         self._is_stopped = False                                                                                # Signal that allows the while loop to be paused
         self._change_directory = False                                                                          # Signal that changes the directory is false
         
-        self.plot_data_thread = QThread()                                                                       # Creates a QThread object to plot the received data
-        self.plot_data_worker = plot_data_class(self.plot_viewer, self.options, self.buffer)                    # Creates a worker object named plot_data_class
-        self.plot_data_worker.moveToThread(self.plot_data_thread)                                               # Moves the class to the thread
-        self.plot_data_worker.finished.connect(self.plot_data_thread.quit)                                      # When the process is finished, this command quits the worker
-        self.plot_data_worker.finished.connect(self.plot_data_thread.wait)                                      # When the process is finished, this command waits the worker to finish completely
-        self.plot_data_worker.finished.connect(self.plot_data_worker.deleteLater)                               # When the process is finished, this command deletes the worker
-        self.plot_data_thread.finished.connect(self.plot_data_thread.deleteLater)                               # When the process is finished, this command deletes the thread
-        self.plot_data_thread.start()                                                                           # Starts the thread 
-        
-        self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)                           # Configures the USB connection
-        self.usb.connect()                                                                                      # Connect the USB port
-        
-    def run_view(self):
-        '''Run_viewer
-        
-        This public function will read the data being sent by the USB acquisition system when
-        recording mode is active. The difference from the previous one is that with each sample, 
-        a progress signal will be sent to the interface (this operation decreases the progress 
-        frequency a little).  
-        '''
-        self.usb.request_acquisition()                                                                          # Command to start the data acquisition    
+        self.signals = WorkerSignals()                                                                         # Creates the signal object
+
+        #self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)                           # Configures the USB connection
+        #self.usb.connect()                                                                                      # Connect the USB port
+
+    def run(self):
+        #self.usb.request_acquisition()                                                                          # Command to start the data acquisition    
         count_to_plot = 0                                                                                       # Initializes the counter that will control the plot (every 1 second sends the message to plot)
         
         self.start_time = time.perf_counter()                                                                   # Sets the start time of the experiment
         while self._is_running == True:                                                                         # While _isRunning is True
-            if (self.usb.port.inWaiting() >= self.bytes_to_read) and (self._is_stopped == False):               # If has any data in UART buffer waiting to be read and the record is not paused
-                data = self.usb.port.read(self.bytes_to_read)                                                   # Reads data from SPI port   
+            #if (self.usb.port.inWaiting() >= self.bytes_to_read) and (self._is_stopped == False):               # If has any data in UART buffer waiting to be read and the record is not paused
+            if (self._is_stopped == False):    
+                #data = self.usb.port.read(self.bytes_to_read)                                                   # Reads data from SPI port   
+                data = self.read_data_from_usb()
                 self.buffer.append(data)                                                                        # Saves the data in buffer
+                
                 count_to_plot += 1                                                                              # Adds one step in counter 
                 if count_to_plot == self.buffer_length:                                                         # Every 1 second 
-                    self.plot_data_worker.plot()                                                                # Runs the function that will plot the last 1 second of data in the interface
+                    self.signals.data_ready.emit(numpy.array(self.buffer))                                      # Emits the data to be plotted
                     count_to_plot = 0                                                                           # Resets the counter
         self.options.record_time = time.perf_counter() - self.start_time                                        # Shares with the interface the total time of record  
         
         self.usb.stop_acquisition()                                                                             # Stops the acquisition in Arduino   
         self.usb.disconnect()                                                                                   # Disconnect the USB port
-        self.plot_data_worker.clear_plot()                                                                      # Clears the plot viewer
-        self.plot_data_worker.finish_plot()                                                                     # Closes the plot thread
         self.finished.emit()                                                                                    # Emits the finish signal    
-                
-    def run_recording(self):
-        '''Run_recording
-        
-        This public function will read the data being sent by the USB acquisition system when 
-        recording mode is active. This is the most simple and faster function to read UART 
-        datas.  
-        '''
-        self.directory_count = 0                                                                                # Creates the counter to count the number of files (this number goes in the file name)
-        self.file = open(self.options.save_directory + "_0.bin", "wb")                                          # Opens/Creates the file to write the binary data
-        
-        self.usb.request_acquisition()                                                                          # Command to starts the data acquisition (send to Arduino) 
-        
-        self.start_time = time.perf_counter()                                                                   # Sets the start time of the experiment
-                
-        while self._is_running == True:                                                                         # While _isRunning is True
-            if (self.usb.port.inWaiting() >= self.bytes_to_read) and (self._is_stopped == False):               # If has any data in UART buffer waiting to be read and the record is not paused
-                data = self.usb.port.read(self.bytes_to_read)                                                   # Reads data from SPI port   
-                self.file.write(data)                                                                           # Writes on file
-                self.buffer.append(data)                                                                        # Saves the data in buffer
-            elif self._change_directory == True:                                                                # If the flag to change the directory is True
-                self.directory_count += 1                                                                       # Adds one step in counter  
-                self.file.close()                                                                               # Closes the last file 
-                self.file = open(self.options.save_directory + "_" + 
-                                 str(self.directory_count) + ".bin", "wb")                                      # Opens/Creates the new file to write the binary data
-                self._change_directory = False                                                                  # Returns the flag to false
 
-        self.options.record_time = time.perf_counter() - self.start_time                                        # Shares with the interface the total time of record
-               
-        self.file.close()                                                                                       # Closes the binary file
-        self.usb.stop_acquisition()                                                                             # Stops the acquisition in Arduino  
-        self.usb.disconnect()                                                                                   # Disconnect the USB port
-        self.plot_data_worker.clear_plot()                                                                      # Clears the plot viewer
-        self.plot_data_worker.finish_plot()                                                                     # Closes the plot thread
-        self.finished.emit()                                                                                    # Emits the finish signal
-        
-    def plot(self):
-        self.plot_data_worker.plot()                                                                            # Calls the function in plot_data_class (another thread) to plot the data 
-    
-    def change_direcotory_function(self):
-        self._change_directory = True                                                                           # Signal that change the directory is true
-    
+    def read_data_from_usb(self):
+        # Mock function to simulate reading data from USB
+        return numpy.random.random()
+
+
     def continue_record(self):
         self.usb.request_acquisition()                                                                          # Command to start the data acquisition    
         self._is_stopped = False                                                                                # Changes state from paused to running
@@ -276,7 +186,7 @@ class receive_data_class(QObject):
 
 #%% INTERFACE CLASS
 
-class interface_visual_gui(QMainWindow):
+class InterfaceVisualGUI(QMainWindow):
     '''Interface visual gui
     
     This class contains all the commands of the interface as well as the constructors of the 
@@ -284,6 +194,7 @@ class interface_visual_gui(QMainWindow):
     '''
  
 #%% CONNECTION AND INITIALIZATION FUNCTIONS
+    data_updated = pyqtSignal(numpy.ndarray)
     
     def __init__(self):
         '''__init__
@@ -292,7 +203,7 @@ class interface_visual_gui(QMainWindow):
         the dictionaries that contain the desired settings for the registry, and makes the 
         connections between the user's activities and their respective functions.
         '''
-        super(interface_visual_gui, self).__init__()                                                            # Calls the inherited classes __init__ method
+        super(InterfaceVisualGUI, self).__init__()                                                            # Calls the inherited classes __init__ method
         QMainWindow.__init__(self)                                                                              # Creates the main window
 
         if platform.system() == 'Linux':
@@ -301,16 +212,15 @@ class interface_visual_gui(QMainWindow):
         elif platform.system() == 'Windows':
             self.interface = uic.loadUi(os.path.dirname(__file__) + "\\interface_gui.ui", self)                     # Loads the interface design archive (made in Qt Designer)
 
-
+        # INTERFCE DEFAULT OPTIONS
+        # This dictionary is the output variable of the interface to start the record
+        self.options = interface_functions.acquisition()
+        self.thread_pool = QThreadPool()                                                                        # Creates a QThreadPool object to receive USB data
 
         self.plot_viewer_function()                                                                             # Calls the plot viewer function
         self.showMaximized()                                                                                    # Maximizes the interface window
         self.show()                                                                                             # Shows the interface to the user
 
-        # INTERFCE DEFAULT OPTIONS
-        # This dictionary is the output variable of the interface to start the record
-        self.options = interface_functions.acquisition()
-        
         # INTERFACE INTERACTIONS
         # Record configuration interactions
         self.chip_combobox.currentIndexChanged.connect(self.chip_function)                                      # Called when chip combobox is changed
@@ -333,7 +243,9 @@ class interface_visual_gui(QMainWindow):
         self.record_button.clicked.connect(self.start_view_mode_function)                                       # Called when the clear button is clicked 
         self.plot_next_button.clicked.connect(self.plot_recording_mode_function)                                # Called when the "plot the last samples" button is clicked
         self.update_statistics_button.clicked.connect(self.update_statistics_function)                          # Called when the "update statistics" button is clicked
-                     
+        # Threading interactions
+        self.data_updated.connect(self.update_plot)
+
 #%% INTERFACE SELECTIONS FUNCTIONS
         
     # Function to set the data aquisition system
@@ -618,16 +530,17 @@ class interface_visual_gui(QMainWindow):
             self.options.usb_port = usb_selected                                                                # Changes the USB port option in the acquisition object
 
     def configure_acquisition(self):       
-        self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)                           # Configures the USB connection
-        self.usb.connect()                                                                                      # Connect the USB port
+        # self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)                           # Configures the USB connection
+        # self.usb.connect()                                                                                      # Connect the USB port
         
-        self.usb.set_sampling_frequency(self.options.sampling_frequency)                                        # Sets the sampling frequency
-        self.usb.set_highpass_frequency(self.highpass_frequency_slider.value())                                 # Sets the Highpass Filter frequency
-        self.usb.set_lowpass_frequency(self.lowpass_frequency_slider.value())                                   # Sets the Lowpass Filter frequency
-        self.usb.set_channel_0to15(self.options.channels_bool)                                                  # Sets the 0-15 channels
-        self.usb.set_channel_16to31(self.options.channels_bool)                                                 # Sets the 16-32 channels
+        # self.usb.set_sampling_frequency(self.options.sampling_frequency)                                        # Sets the sampling frequency
+        # self.usb.set_highpass_frequency(self.highpass_frequency_slider.value())                                 # Sets the Highpass Filter frequency
+        # self.usb.set_lowpass_frequency(self.lowpass_frequency_slider.value())                                   # Sets the Lowpass Filter frequency
+        # self.usb.set_channel_0to15(self.options.channels_bool)                                                  # Sets the 0-15 channels
+        # self.usb.set_channel_16to31(self.options.channels_bool)                                                 # Sets the 16-32 channels
         
-        self.usb.disconnect()                                                                                   # Disconnects USB port
+        # self.usb.disconnect()                                                                                   # Disconnects USB port
+        pass
 
 #%% VIEW MODE FUNCTIONS
     
@@ -671,23 +584,23 @@ class interface_visual_gui(QMainWindow):
         else:                                                                                                   # If the user option is "no"
             return                                                                                              # The program do nothing
     
+    @pyqtSlot()
     def view_mode_function(self):
-        self.data_thread = QThread()                                                                            # Creates a QThread object to receive USB data
-        self.data_worker = receive_data_class(self.plot_viewer, self.options)                                   # Creates a worker object named receive_data_class
-        self.data_worker.moveToThread(self.data_thread)                                                         # Moves worker to the thread
-        self.data_thread.started.connect(self.data_worker.run_view)                                             # If the thread was started, connect to worker.run_view       
-        self.data_worker.finished.connect(self.data_thread.quit)                                                # When the process is finished, this command quits the worker
-        self.data_worker.finished.connect(self.data_thread.wait)                                                # When the process is finished, this command waits the worker to finish completely
-        self.data_worker.finished.connect(self.data_worker.deleteLater)                                         # When the process is finished, this command deletes the worker
-        self.data_thread.finished.connect(self.data_thread.deleteLater)                                         # When the process is finished, this command deletes the thread       
-        self.start_time_estimate = time.perf_counter()                                                          # Gets the time to update the progress statistics
-        self.data_thread.start()                                                                                # Starts the thread     
+        self.data_worker = ReceiveDataClass(self.plot_viewer, self.options)                                   # Creates a worker object named receive_data_class
+        self.data_worker.signals.data_ready.connect(self.handle_new_data_view)
+        self.thread_pool.start(self.data_worker)                                                                # Starts the thread pool with the worker object 
+
+    @pyqtSlot(numpy.ndarray)
+    def handle_new_data_view(self, buffer):
+        self.threadpool.start(PlotUpdaterClass(self, buffer))                                                                             # Plots the data in the plot viewer
 
 #%% RECORDING MODE FUNCTIONS
     
     def start_recording_mode_function(self):
-        self.data_worker.finish_record()                                                                        # Closes the usb port thread
-            
+        self.data_worker.stop_record()
+        self.thread_pool.waitForDone()
+        self.thread_pool = QThreadPool()                                                                        # Creates a QThreadPool object to receive USB data
+
         try:
             Tk().withdraw()                                                                                     # Hide a Tk window
             save_directory = save_dir_popup(filetypes=(("Save file","*.bin"),("All files","*")))                # Opens the computer directorys to chose the save file
@@ -715,24 +628,25 @@ class interface_visual_gui(QMainWindow):
         
         self.plot_next_button.setEnabled(True)                                                                  # Enables the button to plot the last values acquired
         self.start_recording_button.setEnabled(False)                                                           # Disables the strat recording button
-            
+
+    @pyqtSlot()        
     def recording_mode_function(self):
-        self.data_thread = QThread()                                                                            # Creates a QThread object to receive USB data
-        self.data_worker = receive_data_class(self.plot_viewer, self.options)                                   # Creates a worker object named receive_data_class
-        self.data_worker.moveToThread(self.data_thread)                                                         # Moves worker to the thread
-        self.data_thread.started.connect(self.data_worker.run_recording)                                        # If the thread was started, connect to worker.run_view       
-        self.data_worker.finished.connect(self.data_thread.quit)                                                # When the process is finished, this command quits the worker
-        self.data_worker.finished.connect(self.data_thread.wait)                                                # When the process is finished, this command waits the worker to finish completely
-        self.data_worker.finished.connect(self.data_worker.deleteLater)                                         # When the process is finished, this command deletes the worker
-        self.data_thread.finished.connect(self.data_thread.deleteLater)                                         # When the process is finished, this command deletes the thread       
-        self.data_thread.start()                                                                                # Starts the thread     
+        self.data_worker = ReceiveDataClass(self.plot_viewer, self.options)                                   # Creates a worker object named receive_data_class
+        self.data_worker.signals.data_ready.connect(self.handle_new_data_record)
+        self.thread_pool.start(self.data_worker)                                                                # Starts the thread pool with the worker object
         self.start_timers_function()                                                                            # Starts user programmed timer        
 
+    @pyqtSlot(numpy.ndarray)
+    def handle_new_data_view(self, buffer):
+        self.threadpool.start(PlotUpdaterClass(self, buffer))                                                                             # Plots the data in the plot viewer
+        self.threadpool.start(SaveDataClass(self.options.save_directory, buffer))                            # Saves the data in a binary file
+    
     def plot_recording_mode_function(self):
-        try:
-            self.data_worker.plot()                                                                             # Runs the plot function one time
-        except:
-            return
+        pass
+        # try:
+        #     self.data_worker.plot()                                                                             # Runs the plot function one time
+        # except:
+        #     return
 
 #%% ADVANCED SETTINGS FUNCTIONS
     
@@ -773,7 +687,10 @@ class interface_visual_gui(QMainWindow):
 #%% WARNING FUNCTIONS
     
     def successful_function(self):
-        self.data_worker.finish_record()                                                                        # Finishes the record
+        self.data_worker.stop_record()                                                                        # Finishes the record
+        self.thread_pool.waitForDone()                                                                        # Waits for the thread to finish  
+        self.thread_pool = QThreadPool()                                                                      # Creates a QThreadPool object to receive USB data    
+
         self.update_statistics_function()                                                                       # Calls the update statistics function
         
         self.stop_timers_function()                                                                             # Calls the stop timers function
@@ -920,8 +837,8 @@ class interface_visual_gui(QMainWindow):
 #%% CONTOL FUNCTIONS
     
     def change_direcotory_function(self):
-        self.data_worker.change_direcotory_function()
-
+        self.options.save_directory = self.options.save_directory + 'a'
+        
     def stop_function(self): 
         if self.stop_button.text() == "STOP":                                                                   # If the button text is 'stop'
             self.data_worker.stop_record()                                                                      # Stops the record
@@ -960,7 +877,10 @@ class interface_visual_gui(QMainWindow):
        
     # Function to cancel the data acquisition     
     def cancel_function(self):
-        self.data_worker.finish_record()                                                                        # Closes the usb port thread
+        self.data_worker.stop_record()                                                                        # Closes the usb port thread
+        self.thread_pool.waitForDone()                                                                        # Waits for the thread to finish  
+        self.thread_pool = QThreadPool()                                                                      # Creates a QThreadPool object to receive USB data    
+
         self.stop_timers_function()                                                                             # Stops the timers
                 
         self.is_recording_mode = False                                                                          # Change the recording mode flag to 'false'
@@ -992,10 +912,12 @@ class interface_visual_gui(QMainWindow):
         self.tabWidget.setCurrentIndex(0)                                                                       # Changes to configuration tab                                                                          
         
     def closeEvent(self, event):                                                                    
-        super(interface_visual_gui, self).closeEvent(event)                                                     # Defines the close event                                                             
+        super(InterfaceVisualGUI, self).closeEvent(event)                                                     # Defines the close event                                                             
         self.stop_timers_function()                                                                             # Stops the timers
         try:                                                                                                    # Trys to close the view mode
-            self.data_worker.finish_record()                                                                    # Closes the usb port thread
+            self.data_worker.stop_record()                                                                      # Closes the usb port thread
+            self.thread_pool.waitForDone()                                                                      # Waits for the thread to finish
+            event.accept()                                                                                      # Accepts the event
         except:                                                                                                 # If the threads do not exists
             QCoreApplication.instance().quit                                                                    # Quits of the window                
 
@@ -1038,11 +960,54 @@ class interface_visual_gui(QMainWindow):
         range_ = self.plot_viewer.getViewBox().viewRange()                                                                       # Sets the range 
         self.plot_viewer.getViewBox().setLimits(xMin=range_[0][0], xMax=range_[0][1], yMin=range_[1][0], yMax=range_[1][1])      # Sets max and min limits on axis
 
+        self.channel_count = list(range(0, self.options.number_channels))                                                           # Creates a vector with the number of channels lenght        
+                
+        self.atualization_time = 4                                                                                          # Total time in seconds to show in plot (default: 4 seconds)
+        self.plot_length = self.atualization_time*self.options.sampling_frequency                                           # Total data length to be plotted per channel in "atualization_time"
+        self.bytes_to_plot = self.options.number_channels*self.options.sampling_frequency                                   # Total data length to be plotted
+        self.time_in_seconds = numpy.linspace(0, self.atualization_time, self.plot_length)                                  # Time vector in seconds
+        self.unpack_format = "<" + str(int(self.bytes_to_plot)) + "h"                                                       # Format to struct.unpack( ) function reads the data (two's complement little edian)     
+        self.plot_pen = mkPen('#D88A8A', width=0.8)                                                                         # Sets the plot pen 
+        self.clear_plot()                                                                                                   # Calls the clear plot function
+        self.setup_plot()                                                                                       # Calls the setup plot function
+
+    @pyqtSlot(numpy.ndarray)
+    def update_plot(self, buffer):
+        '''Plot
+        
+        This public function will plot the last 4 seconds of record on the interface in real 
+        time, updating the values every second
+        '''
+        byte_data = bytearray(b''.join(buffer))                                                                        # Gets all packages in buffer and puts on single binary list
+        integer_data = struct.unpack(self.unpack_format, byte_data)                                                         # Transforms binary data in integer with the string in format "self.unpack_format" (two's complement little edian)          
+        micro_volts_data = 500*(0.195e-6)*numpy.array(integer_data)                                                         # Transforms data to Volts (0.195*1e-6 -> datasheet) and adds a scale factor to plot (100 -> arbitrary)
+        
+        for channel in self.channel_count:                                                                                  # For all channels recorded
+            self.data_matrix[channel].extend(self.options.channels_number[channel] + micro_volts_data[channel+4::self.number_channels])    # Gets the data in Volts "channel" by "channel", puts in matrix to be plotted and for each channel add the channel number for better visualization of the data
+            self.lines[channel].setData(self.time_in_seconds, self.data_matrix[channel])  
+
+    def clear_plot(self):
+        '''Clear plot
+        
+        This public function resets the plot to initial configurations
+        '''
+        self.plot_viewer.clear()
+
+    def setup_plot(self):      
+        self.data_matrix = []                                                                                               # Initializes the data matrix to be plotted (each row is a channel)
+        self.lines = []                                                                                                     # Initializes a line matrix to be plotted in the begging of acquisition (each row have only "0" = value of the channel)
+        for i in self.channel_count:                                                                                        # Creates a row in the matrix for each active channel 
+            self.data_matrix.append(collections.deque(maxlen = self.plot_length))                                           # Creates 1 circular buffer to all channels with length of 5 seconds of record                             
+            for j in range(0, self.plot_length):                                                                            # For all columns in each row
+                self.data_matrix[i].append(self.options.channels_number[i])                                                                # Puts the value of the channel (ex: for the channel 6, the row have only 6 to be plotted in correct place)
+            self.lines.append(self.plot_viewer.plot(self.time_in_seconds, self.data_matrix[i], pen = self.plot_pen))        # Plots lines in interface
+
+
 #%% INITIALIZANTION FUNCTION
 
 def main(): 
   app = QtWidgets.QApplication(sys.argv)   # Create an instance of QtWidgets.QApplication
-  window = interface_visual_gui()          # Create an instance of our class
+  window = InterfaceVisualGUI()          # Create an instance of our class
   app.exec_()                              # Start the application
  
 if __name__ == '__main__': 

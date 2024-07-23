@@ -40,7 +40,7 @@ import os
 import platform
 from datetime import datetime, timedelta
 from PyQt5 import QtWidgets, uic    
-from PyQt5.QtCore import QObject, QThread, pyqtSignal, QCoreApplication, QTimer, QThreadPool, QRunnable
+from PyQt5.QtCore import QObject, QThread, pyqtSignal, QCoreApplication, QTimer
 from PyQt5.QtWidgets import QMessageBox, QMainWindow
 from tkinter import Tk 
 from tkinter.filedialog import (asksaveasfilename as save_dir_popup)
@@ -51,7 +51,7 @@ import pyqtgraph
 
 #%% PLOT DATA CLASS
 
-class plot_data_class_rhd(QRunnable):
+class plot_data_class_rhd(QObject):
     '''Plot data class 
     
     This class is a worker that will be inserted into a Thread. The functions of this class 
@@ -135,7 +135,7 @@ class plot_data_class_rhd(QRunnable):
         '''
         self.finished.emit()                                                                                                # Emits the finish signal to closes the thread
 
-class plot_data_class_ads(QRunnable):
+class plot_data_class_ads(QObject):
     '''Plot data class 
     
     This class is a worker that will be inserted into a Thread. The functions of this class 
@@ -235,7 +235,7 @@ class plot_data_class_ads(QRunnable):
 
 #%% RECEIVE DATA CLASS
     
-class receive_data_class(QRunnable):
+class receive_data_class(QObject):
     ''' Receive data class
     
     This class is a worker that will be inserted into a Thread. The functions of this class
@@ -416,8 +416,6 @@ class interface_visual_gui(QMainWindow):
         # INTERFCE DEFAULT OPTIONS
         # This dictionary is the output variable of the interface to start the record
         self.options = interface_functions.acquisition()
-        
-        self.thread_pool = QThreadPool()
 
         # INTERFACE INTERACTIONS
         # Record configuration interactions
@@ -834,19 +832,19 @@ class interface_visual_gui(QMainWindow):
         self.start_recording_button.setEnabled(False)                                                           # Disables the strat recording button
             
     def recording_mode_function(self):
-        # self.data_thread = QThread()                                                                            # Creates a QThread object to receive USB data
+        self.data_thread = QThread()                                                                            # Creates a QThread object to receive USB data
         self.data_worker = receive_data_class(self.plot_viewer, self.options)                                   # Creates a worker object named receive_data_class
         
-        self.thread_pool.start(self.data_worker)
+        #self.thread_pool.start(self.data_worker)
 
 
-        # self.data_worker.moveToThread(self.data_thread)                                                         # Moves worker to the thread
-        # self.data_thread.started.connect(self.data_worker.run_recording)                                        # If the thread was started, connect to worker.run_view       
-        # self.data_worker.finished.connect(self.data_thread.quit)                                                # When the process is finished, this command quits the worker
-        # self.data_worker.finished.connect(self.data_thread.wait)                                                # When the process is finished, this command waits the worker to finish completely
-        # self.data_worker.finished.connect(self.data_worker.deleteLater)                                         # When the process is finished, this command deletes the worker
-        # self.data_thread.finished.connect(self.data_thread.deleteLater)                                         # When the process is finished, this command deletes the thread       
-        # self.data_thread.start()                                                                                # Starts the thread     
+        self.data_worker.moveToThread(self.data_thread)                                                         # Moves worker to the thread
+        self.data_thread.started.connect(self.data_worker.run_recording)                                        # If the thread was started, connect to worker.run_view       
+        self.data_worker.finished.connect(self.data_thread.quit)                                                # When the process is finished, this command quits the worker
+        self.data_worker.finished.connect(self.data_thread.wait)                                                # When the process is finished, this command waits the worker to finish completely
+        self.data_worker.finished.connect(self.data_worker.deleteLater)                                         # When the process is finished, this command deletes the worker
+        self.data_thread.finished.connect(self.data_thread.deleteLater)                                         # When the process is finished, this command deletes the thread       
+        self.data_thread.start()                                                                                # Starts the thread     
         self.start_timers_function()                                                                            # Starts user programmed timer        
 
     def plot_recording_mode_function(self):

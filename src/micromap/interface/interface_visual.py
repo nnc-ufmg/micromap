@@ -212,12 +212,12 @@ class InterfaceVisualGUI(QMainWindow):
         elif platform.system() == 'Windows':
             self.interface = uic.loadUi(os.path.dirname(__file__) + "\\interface_gui.ui", self)                     # Loads the interface design archive (made in Qt Designer)
 
-        # INTERFCE DEFAULT OPTIONS
+        # INTERFACE DEFAULT OPTIONS
         # This dictionary is the output variable of the interface to start the record
         self.options = interface_functions.acquisition()
         self.thread_pool = QThreadPool()                                                                        # Creates a QThreadPool object to receive USB data
 
-        self.plot_viewer_function()                                                                             # Calls the plot viewer function
+        self.plot_viewer_function(17)                                                                             # Calls the plot viewer function
         self.showMaximized()                                                                                    # Maximizes the interface window
         self.show()                                                                                             # Shows the interface to the user
 
@@ -282,6 +282,7 @@ class InterfaceVisualGUI(QMainWindow):
             self.channel_32_area.setEnabled(False)                                                              # Disables channels 17 - 32
             self.options.chip = "RHD2216"                                                                       # Changes the chip on main variables dictionary 
             self.chip_lineshow.setText("RHD2216")                                                               # Changes the line edit (Record tab) in the interface
+            self.plot_viewer_function(17)
         elif chip == 1:                                                                                         # If is selected RHD2132    
             self.highpass_frequency_slider.setEnabled(True)                                                     # Enables high pass filter cutting frequency slider
             self.highpass_frequency_function()                                                                  # Calls the frequency function to update the information
@@ -291,6 +292,7 @@ class InterfaceVisualGUI(QMainWindow):
             self.channel_32_area.setEnabled(True)                                                               # Enables channels 17 - 32
             self.options.chip = "RHD2132"                                                                       # Changes the chip on main variables dictionary
             self.chip_lineshow.setText("RHD2132")                                                               # Changes the line edit (Record tab) in the interface
+            self.plot_viewer_function(33)
         elif chip == 2:                                                                                         # If is selected ADS1298
             self.highpass_frequency_slider.setEnabled(False)                                                    # Disables high pass filter cutting frequency slider
             self.highpass_frequency_lineshow.setText("--")                                                      # Changes the line edit (Record tab) in the interface                        
@@ -300,6 +302,7 @@ class InterfaceVisualGUI(QMainWindow):
             self.channel_32_area.setEnabled(False)                                                              # Disables channels 17 - 32
             self.options.chip = "ADS1298"                                                                       # Changes the chip on main variables dictionary
             self.chip_lineshow.setText("ADS1298")                                                               # Changes the line edit (Record tab) in the interface
+            self.plot_viewer_function(9)
     
     # Function to set the sampling frequency
     def sampling_frequency_function(self):
@@ -529,17 +532,17 @@ class InterfaceVisualGUI(QMainWindow):
             usb_selected = self.online_ports[self.usb_port_combobox.currentIndex()]                             # Gets the port selected by the user
             self.options.usb_port = usb_selected                                                                # Changes the USB port option in the acquisition object
 
-    def configure_acquisition(self):       
-        # self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)                           # Configures the USB connection
-        # self.usb.connect()                                                                                      # Connect the USB port
+    def configure_acquisition(self):       #INCOMPLETE - CHANGE
+        self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)                           # Configures the USB connection
+        self.usb.connect()                                                                                      # Connect the USB port
         
-        # self.usb.set_sampling_frequency(self.options.sampling_frequency)                                        # Sets the sampling frequency
-        # self.usb.set_highpass_frequency(self.highpass_frequency_slider.value())                                 # Sets the Highpass Filter frequency
-        # self.usb.set_lowpass_frequency(self.lowpass_frequency_slider.value())                                   # Sets the Lowpass Filter frequency
-        # self.usb.set_channel_0to15(self.options.channels_bool)                                                  # Sets the 0-15 channels
-        # self.usb.set_channel_16to31(self.options.channels_bool)                                                 # Sets the 16-32 channels
+        self.usb.set_sampling_frequency(self.options.sampling_frequency)                                        # Sets the sampling frequency
+        self.usb.set_highpass_frequency(self.highpass_frequency_slider.value())                                 # Sets the Highpass Filter frequency
+        self.usb.set_lowpass_frequency(self.lowpass_frequency_slider.value())                                   # Sets the Lowpass Filter frequency
+        self.usb.set_channel_0to15(self.options.channels_bool)                                                  # Sets the 0-15 channels
+        self.usb.set_channel_16to31(self.options.channels_bool)                                                 # Sets the 16-32 channels
         
-        # self.usb.disconnect()                                                                                   # Disconnects USB port
+        self.usb.disconnect()                                                                                   # Disconnects USB port
         pass
 
 #%% VIEW MODE FUNCTIONS
@@ -585,9 +588,9 @@ class InterfaceVisualGUI(QMainWindow):
             return                                                                                              # The program do nothing
     
     @pyqtSlot()
-    def view_mode_function(self):
+    def view_mode_function(self): 
         self.data_worker = ReceiveDataClass(self.plot_viewer, self.options)                                   # Creates a worker object named receive_data_class
-        self.data_worker.signals.data_ready.connect(self.handle_new_data_view)
+        self.data_worker.signals.data_ready.connect(self.handle_new_data_view)  # decorated slot has no signature compatible with WorkerSignals.data_ready[]
         self.thread_pool.start(self.data_worker)                                                                # Starts the thread pool with the worker object 
 
     @pyqtSlot(numpy.ndarray)
@@ -794,7 +797,7 @@ class InterfaceVisualGUI(QMainWindow):
         self.directory_timer = QTimer(self)                                                                     # Initializes the timer to end the data acquisition
         self.directory_timer.setInterval(int(3.6e6))                                                            # Sets the interval time to 1 hour
         self.directory_timer.setSingleShot(False)                                                               # Sets the timer to shot all times
-        self.directory_timer.timeout.connect(self.change_direcotory_function)                                   # Calls the change directory function when the timer is reached
+        self.directory_timer.timeout.connect(self.change_directory_function)                                   # Calls the change directory function when the timer is reached
         
         self.update_statistics_timer = QTimer(self)                                                             # Initializes the timer to end the data acquisition
         self.update_statistics_timer.setInterval(int(self.options.get_total_time()*50))                         # Sets the interval time to 2% of total time
@@ -834,9 +837,9 @@ class InterfaceVisualGUI(QMainWindow):
             else:                                                                                               # If estimated progress is more than 100% 
                 self.progress_bar.setValue(100)                                                                 # Updates the progress bar to 100%
 
-#%% CONTOL FUNCTIONS
+#%% CONTROL FUNCTIONS
     
-    def change_direcotory_function(self):
+    def change_directory_function(self):
         self.options.save_directory = self.options.save_directory + 'a'
         
     def stop_function(self): 
@@ -921,13 +924,13 @@ class InterfaceVisualGUI(QMainWindow):
         except:                                                                                                 # If the threads do not exists
             QCoreApplication.instance().quit                                                                    # Quits of the window                
 
-    def plot_viewer_function(self):
+    def plot_viewer_function(self, y_graph):
         #self.plot_viewer.setDownsampling(ds=4, auto=True, mode='mean')
         
         self.plot_viewer.setBackground(None)                                                                    # Sets the plot background
-        self.plot_viewer.setLimits(xMin = 0, yMin = 0, xMax = 4, yMax = 33)                                     # Sets the plot limits 
+        self.plot_viewer.setLimits(xMin = 0, yMin = 0, xMax = 4, yMax = y_graph)                                     # Sets the plot limits 
         self.plot_viewer.setXRange(0, 4, padding=0.0001)                                                        # Sets the X axis range and scale
-        self.plot_viewer.setYRange(0, 33, padding=-0.001)                                                       # Sets the Y axis range and scale
+        self.plot_viewer.setYRange(0, y_graph, padding=-0.001)                                                       # Sets the Y axis range and scale
         
         y_axis = self.plot_viewer.getAxis('left')                                                               # Sets the Y axis to left
         y_axis.setStyle(tickLength=0, showValues=True)                                                          # Sets without ticks and with values
@@ -939,7 +942,7 @@ class InterfaceVisualGUI(QMainWindow):
         self.plot_viewer.setLabel('bottom', "Time [seconds]", **label_style)                                    # Sets the X axis subtitle
         self.plot_viewer.setLabel('left', "Channels", **label_style)                                            # Sets th Y axis subtitle
         
-        y_ticks_length = range(1,33)                                                                            # Sets y Axis range to 32 channels
+        y_ticks_length = range(1,y_graph)                                                                            # Sets y Axis range to 32 channels
         y_axis.setTicks([[(v, str(v)) for v in y_ticks_length]])                                                # Fixes the axis at integer values referring to the channels
 
         font = QtGui.QFont()                                                                                    # Uses the QtGui fonts

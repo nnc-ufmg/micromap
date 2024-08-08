@@ -238,7 +238,7 @@ class usb_singleton():
         self.port.write(command)                                                # Sends via USB port the messsage
         #request_ok = self.port.read(4)                                          # Reads the 4bytes answer message
         #return request_ok                                                       # Returns the answer message
-        print("aquisicao")
+        #print("aquisicao")
         return
     
     def stop_acquisition(self):
@@ -283,7 +283,7 @@ class usb_singleton():
         command = bytearray(b'\xC1\x00')                                        # Defines the mask to configures the channels 31 to 16
         command = command + channels_bool[2].to_bytes(1,'big')                  # Gets the channels 31 to 24 and transforms in bytes type
         command = command + channels_bool[3].to_bytes(1,'big')                  # Gets the channels 23 to 16 and transforms in bytes type
-        print(str(command.hex()))                                               # Prints the command
+        #print(str(command.hex()))                                               # Prints the command
         self.port.write(command)                                                # Sends the messsage via USB port 
         channels_ok = self.port.read(4)                                         # Reads the 4 bytes answer message
         return channels_ok                                                      # Returns the answer message
@@ -301,7 +301,7 @@ class usb_singleton():
         command = bytearray(b'\xC2\x00')                                        # Defines the mask to configures the channels 15 to 0
         command = command + channels_bool[0].to_bytes(1,'big')                  # Gets the channels 15 to 8 and transforms in bytes type
         command = command + channels_bool[1].to_bytes(1,'big')                  # Gets the channels 7 to 0 and transforms in bytes type
-        print(str(command.hex()))                                               # Prints the command
+        #print(str(command.hex()))                                               # Prints the command
         self.port.write(command)                                                # Sends the messsage via USB port
         channels_ok = self.port.read(4)                                         # Reads the 4bytes answer message
         return channels_ok                                                      # Returns the answer message

@@ -48,6 +48,7 @@ from tkinter.filedialog import (asksaveasfilename as save_dir_popup)
 from pyqtgraph.Qt import QtGui
 from pyqtgraph import mkPen
 import pyqtgraph
+import debugpy
 
 #%% PLOT DATA CLASS
 

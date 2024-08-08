@@ -91,7 +91,7 @@ class plot_data_class_rhd(QObject):
         self.plot_length = self.atualization_time*self.options.sampling_frequency                                           # Total data length to be plotted per channel in "atualization_time"
         self.bytes_to_plot = self.options.number_channels*self.options.sampling_frequency                                   # Total data length to be plotted
         self.time_in_seconds = numpy.linspace(0, self.atualization_time, self.plot_length)                                  # Time vector in seconds
-        self.unpack_format = "<" + str(int(self.bytes_to_plot)) + "h"                                                       # Format to struct.unpack( ) function reads the data (two's complement little edian)     
+        self.unpack_format = "<" + str(int(self.bytes_to_plot)) + "h"                                                       # Format to struct.unpack( ) function reads the data (two's complement little endian)     
 
         self.plot_pen = mkPen('#D88A8A', width=0.8)                                                                         # Sets the plot pen 
         self.clear_plot()                                                                                                   # Calls the clear plot function
@@ -103,7 +103,7 @@ class plot_data_class_rhd(QObject):
         This public function will plot the last 4 seconds of record on the interface in real 
         time, updating the values every second
         '''
-        print(self.buffer)
+
         byte_data = bytearray(b''.join(self.buffer))                                                                        # Gets all packages in buffer and puts on single binary list
         integer_data = struct.unpack(self.unpack_format, byte_data)                                                         # Transforms binary data in integer with the string in format "self.unpack_format" (two's complement little edian)          
         micro_volts_data = 500*(0.195e-6)*numpy.array(integer_data)                                                         # Transforms data to Volts (0.195*1e-6 -> datasheet) and adds a scale factor to plot (100 -> arbitrary)
@@ -175,7 +175,8 @@ class plot_data_class_ads(QObject):
         self.plot_length = self.atualization_time*self.options.sampling_frequency                                           # Total data length to be plotted per channel in "atualization_time"
         self.bytes_to_plot = self.options.number_channels*self.options.sampling_frequency                                   # Total data length to be plotted
         self.time_in_seconds = numpy.linspace(0, self.atualization_time, self.plot_length)                                  # Time vector in seconds
-        
+        self.unpack_format = "<" + str(int(self.bytes_to_plot)) + "h"                                                       # Format to struct.unpack( ) function reads the data (two's complement little endian)
+
         self.plot_pen = mkPen('#D88A8A', width=0.8)                                                                         # Sets the plot pen 
         self.clear_plot()                                                                                                   # Calls the clear plot function
         self.setup_plot()                                                                                                   # Calls the setup plot function
@@ -187,27 +188,27 @@ class plot_data_class_ads(QObject):
         time, updating the values every second
         '''
 
-        hex_data = [[],[],[],[],[],[],[],[]]                                                                                # Sample sequence for each channel
+        # byte_data = bytearray(b''.join(self.buffer))                                                                        # Gets all packages in buffer and puts on single binary list
+        # integer_data = struct.unpack(self.unpack_format, byte_data)                                                         # Transforms binary data in integer with the string in format "self.unpack_format" (two's complement little edian)
+        # micro_volts_data = 7.9473e-8*numpy.array(integer_data)                                                              # Transforms data to Volts (7.9473e-8 -> datasheet) and adds a scale factor to plot (100 -> arbitrary)
 
-        for sample in self.buffer:
-            sample_data = sample.hex()                                                                                      
-            sample_data = sample_data[14:] + sample_data[:8]                                                                # One ordered complete sample (status word removed) 
+        hex_data = [[] for _ in range(self.number_channels)]                                                                                # Sample sequence for each channel
+
+        for sample in self.buffer:                                                                                  
+            sample_data = sample.hex()[14:] + sample.hex()[:8]                                                                # One ordered complete sample (status word removed) 
             for count in range(8):
                 hex_data[count].append(sample_data[(count*6):(count*6)+6])                                                  # Splices the sample and assigns the appropriate hex values to each channel
 
-        volt_data = [[],[],[],[],[],[],[],[]]                                                                               # Array to hold converted values for each channel
-        for index, channel in enumerate(hex_data):
-            values = channel
-            for value in values:
-                new_value = int(value,16)                                                                                   # Convert string to hex
-                if new_value & 0x800000:                                                                                    # Check if the sign bit is set
-                    new_value = (new_value - 2**24) * 7.9473e-8
-                else:
-                    new_value = new_value * 7.9473e-8   
-                volt_data[index].append(new_value)
+        micro_volts_data = [   
+                [
+                    (int(value, 16) - 2**24) * 7.9473e-8 if int(value, 16) & 0x800000 else int(value, 16) * 7.9473e-8
+                    for value in channel
+                ]
+                for channel in hex_data
+            ]
 
         for channel in self.channel_count:                                                                                  # Organize data for each channel
-            self.data_matrix[channel].extend(self.channels[channel] + volt_data[channel])
+            self.data_matrix[channel].extend(self.channels[channel] + micro_volts_data[channel])
             self.lines[channel].setData(self.time_in_seconds, self.data_matrix[channel])
 
     def clear_plot(self):

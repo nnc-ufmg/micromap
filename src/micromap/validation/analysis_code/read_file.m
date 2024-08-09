@@ -1,13 +1,13 @@
 clc 
 clear
 
-file = fopen("C:\Users\mcjpe\Desktop\test_0.bin",'r');
+file = fopen("C:\Users\luizv\Desktop\UFMG\NNC\micromap\src\micromap\interface\records\tests\test_potentiometer",'r');
 %fseek(file, -12800000000, "eof");
 data_raw = fread(file, 'integer*2=>signed', 'ieee-le');
 %data_char = fread(file, 'char', 'ieee-be');
 fclose(file);
 
-num_channels = 3;
+num_channels = 4;
 data = reshape(data_raw, num_channels, []);
 
 data = 0.195*data;

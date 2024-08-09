@@ -188,15 +188,11 @@ class plot_data_class_ads(QObject):
         This public function will plot the last 4 seconds of record on the interface in real 
         time, updating the values every second
         '''
-
-        # byte_data = bytearray(b''.join(self.buffer))                                                                        # Gets all packages in buffer and puts on single binary list
-        # integer_data = struct.unpack(self.unpack_format, byte_data)                                                         # Transforms binary data in integer with the string in format "self.unpack_format" (two's complement little edian)
-        # micro_volts_data = 7.9473e-8*numpy.array(integer_data)                                                              # Transforms data to Volts (7.9473e-8 -> datasheet) and adds a scale factor to plot (100 -> arbitrary)
-
+        
         hex_data = [[] for _ in range(self.number_channels)]                                                                                # Sample sequence for each channel
-
+        
         for sample in self.buffer:                                                                                  
-            sample_data = sample.hex()[14:] + sample.hex()[:8]                                                                # One ordered complete sample (status word removed) 
+            sample_data = sample.hex()[6:]
             for count in range(8):
                 hex_data[count].append(sample_data[(count*6):(count*6)+6])                                                  # Splices the sample and assigns the appropriate hex values to each channel
 
@@ -310,6 +306,7 @@ class receive_data_class(QObject):
         count_to_plot = 0                                                                                       # Initializes the counter that will control the plot (every 1 second sends the message to plot)
         
         self.start_time = time.perf_counter()                                                                   # Sets the start time of the experiment
+        self.usb.port.read(4)                                                                                   # Reads the first 4 bytes to start the acquisition (this is a workaround to avoid the first sample to be corrupted)
         while self._is_running == True:                                                                         # While _isRunning is True
             if (self.usb.port.inWaiting() >= self.bytes_to_read) and (self._is_stopped == False):               # If has any data in UART buffer waiting to be read and the record is not paused
                 data = self.usb.port.read(self.bytes_to_read)                                                   # Reads data from SPI port   

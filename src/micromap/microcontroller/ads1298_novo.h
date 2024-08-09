@@ -210,7 +210,7 @@ void ads_1298_chip_class::init_default(int p_serial_pinout, int p_sync_pinout, i
   //write(CONFIG2, 0x00 | INT_TEST |  TEST_AMP | TEST_FREQ1);
 
   for (int i = 1; i <= 8; i++) {
-    write(CHnSET + i, ELECTRODE_INPUT | GAIN_6X);  //report this channel with x6 gain
+    write(CHnSET + i, ELECTRODE_INPUT | GAIN_12X);  //report this channel with x6 gain
     //write(CHnSET + i, TEST_SIGNAL | GAIN_12X); //create square wave
     //write(CHnSET + i,SHORTED); //disable this channel
     //write(CHnSET + i, 0x01); //offset measurement
@@ -424,9 +424,10 @@ void ads_1298_chip_class::treat_command(byte *command_buffer) {
       start();
       delay(100);
       rdatac();
+      delay(100);
       start_acquisition(sampling_frequency);  // Starts the data acquisition
-      command_buffer[3] = 'K';                // Sets the byte to answer to interface the ascii ("OK")
-      command_buffer[2] = 'O';                // Sets the byte to answer to interface the ascii ("OK")
+      //command_buffer[3] = 'K';                // Sets the byte to answer to interface the ascii ("OK")
+      //command_buffer[2] = 'O';                // Sets the byte to answer to interface the ascii ("OK")
       break;
 
     /*  STOPS ACQUISITION COMMAND
@@ -436,8 +437,8 @@ void ads_1298_chip_class::treat_command(byte *command_buffer) {
       sdatac();
       digital_write_direct(sync_pinout, LOW);
       stop_acquisition();       // Stops the data aquisition
-      command_buffer[3] = 'K';  // Sets the byte to answer to interface the ascii ("OK")
-      command_buffer[2] = 'O';  // Sets the byte to answer to interface the ascii ("OK")
+      //command_buffer[3] = 'K';  // Sets the byte to answer to interface the ascii ("OK")
+      //command_buffer[2] = 'O';  // Sets the byte to answer to interface the ascii ("OK")
       break;
 
     /*  TRANSFER DATA COMMAND

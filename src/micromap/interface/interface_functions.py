@@ -226,6 +226,7 @@ class usb_singleton():
         '''
         self.port.write(command)                                                # Sends the messsage via USB port
         connection_ok = self.port.read(4)                                       # Reads the 4bytes answer message
+        self.port.reset_input_buffer()                                        # Resets the input buffer
         return connection_ok                                                    # Returns the answer message
     
     def request_acquisition(self):
@@ -236,8 +237,9 @@ class usb_singleton():
         '''
         command = bytearray(b'\x11\x2A\x2A\x2A')                                # Defines thes message to start the acquisition
         self.port.write(command)                                                # Sends via USB port the messsage
-        #request_ok = self.port.read(4)                                          # Reads the 4bytes answer message
-        #return request_ok                                                       # Returns the answer message
+        request_ok = self.port.read(4)                                          # Reads the 4bytes answer message
+        self.port.reset_input_buffer()                                          # Resets the input buffer
+        return request_ok                                                       # Returns the answer message
         #print("aquisicao")
         return
     
@@ -249,8 +251,9 @@ class usb_singleton():
         '''
         command = bytearray(b'\xFF\x2A\x2A\x2A')                                # Defines thes message to stop the acquisition
         self.port.write(command)                                                # Sends the messsage via USB port
-        #stop_ok = self.port.read(4)                                             # Reads the 4bytes answer message
-        #return stop_ok                                                          # Returns the answer message
+        stop_ok = self.port.read(4)                                             # Reads the 4bytes answer message
+        self.port.reset_input_buffer()                                          # Resets the input buffer
+        return stop_ok                                                          # Returns the answer message
         return
     
     def set_sampling_frequency(self, frequency):
@@ -268,6 +271,7 @@ class usb_singleton():
         command = command + frequency                                           # Concats the mask and the command
         self.port.write(command)                                                # Sends the messsage via USB port
         frequency_ok = self.port.read(4)                                        # Reads the 4bytes answer message
+        self.port.reset_input_buffer()                                          # Resets the input buffer
         return frequency_ok                                                     # Returns the answer message
     
     def set_channel_0to15(self, channels_bool):
@@ -286,6 +290,7 @@ class usb_singleton():
         #print(str(command.hex()))                                               # Prints the command
         self.port.write(command)                                                # Sends the messsage via USB port 
         channels_ok = self.port.read(4)                                         # Reads the 4 bytes answer message
+        self.port.reset_input_buffer()                                          # Resets the input buffer
         return channels_ok                                                      # Returns the answer message
     
     def set_channel_16to31(self, channels_bool):
@@ -304,6 +309,7 @@ class usb_singleton():
         #print(str(command.hex()))                                               # Prints the command
         self.port.write(command)                                                # Sends the messsage via USB port
         channels_ok = self.port.read(4)                                         # Reads the 4bytes answer message
+        self.port.reset_input_buffer()                                          # Resets the input buffer
         return channels_ok                                                      # Returns the answer message
     
     def set_highpass_frequency(self, slider_index):
@@ -321,6 +327,7 @@ class usb_singleton():
         command = command + slider_index                                        # Concats the mask and the command
         self.port.write(command)                                                # Sends the messsage via USB port
         frequency_ok = self.port.read(4)                                        # Reads the 4bytes answer message
+        self.port.reset_input_buffer()                                          # Resets the input buffer
         return frequency_ok                                                     # Returns the answer message
      
     def set_lowpass_frequency(self, slider_index):
@@ -337,6 +344,7 @@ class usb_singleton():
         command = command + slider_index                                        # Concats the mask and the command
         self.port.write(command)                                                # Sends the messsage via USB port
         frequency_ok = self.port.read(4)                                        # Reads the 4bytes answer message
+        self.port.reset_input_buffer()                                          # Resets the input buffer
         return frequency_ok                                                     # Returns the answer messag
 
 # class rhd_chip():

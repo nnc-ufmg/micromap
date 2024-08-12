@@ -336,7 +336,7 @@ class receive_data_class(QObject):
         self.usb.request_acquisition()                                                                          # Command to starts the data acquisition (send to Arduino) 
         
         self.start_time = time.perf_counter()                                                                   # Sets the start time of the experiment
-                
+        self.usb.port.read(4)
         while self._is_running == True:                                                                         # While _isRunning is True
             if (self.usb.port.inWaiting() >= self.bytes_to_read) and (self._is_stopped == False):               # If has any data in UART buffer waiting to be read and the record is not paused
                 data = self.usb.port.read(self.bytes_to_read)                                                   # Reads data from SPI port   

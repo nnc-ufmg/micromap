@@ -1,51 +1,54 @@
 clc 
 clear
 
-% Open the binary file (adjust the path as necessary)
-file = fopen("C:\Users\luizv\Desktop\UFMG\NNC\micromap\src\micromap\interface\records\tests\test_potentiometer",'r');
-
-% Read the raw data as unsigned 8-bit integers
-data_raw = fread(file, 'uint8=>uint8');
+file = fopen("C:\Users\luizv\Desktop\square_0.bin",'r');
+data_raw = fread(file);
+data_hex = dec2hex(data_raw);
 fclose(file);
 
-% Constants
-num_channels = 8;     % Number of channels
-bytes_per_sample = 27; % 3 bytes for status word + 3 bytes per channel * 8 channels
+% Number of bytes per sample
+num_bytes_per_sample = 27;
+% Number of channels
+num_channels = 8;
+% Total number of samples
+num_samples = length(data_raw) / num_bytes_per_sample;
 
-% Ensure data length is a multiple of bytes_per_sample
-total_bytes = length(data_raw);
-num_samples = floor(total_bytes / bytes_per_sample);
+% Reshape the data into 27-byte samples
+data_hex = reshape(data_hex', num_bytes_per_sample*2, num_samples)';
 
-% Trim any excess bytes
-data_raw = data_raw(1:(num_samples * bytes_per_sample));
+% Extract channel data (skip the first 3 bytes which are the status word)
+channel_data = data_hex(:, 7:end);
 
-% Reshape data into samples
-data_raw = reshape(data_raw, bytes_per_sample, num_samples);
+% Reshape channel data into 8 columns, 6 hex characters per column
+channel_data = reshape(channel_data, num_samples, num_channels, 6);
 
-% Extract channel data
-data = zeros(num_channels, num_samples);
+% Convert the hex data directly to integers
+int_data = hex2dec(reshape(channel_data, num_samples*num_channels, 6));
 
-for i = 1:num_channels
-    % Extract 3 bytes per channel per sample
-    channel_data = data_raw(4 + (i-1)*3 : 6 + (i-1)*3, :);
-    
-    % Convert from 3 bytes (24-bit) to signed integers
-    channel_data_int = typecast(reshape(uint8(channel_data), [], 1), 'int32');
-    
-    % Shift right by 8 bits to match the 24-bit data alignment
-    data(i, :) = double(bitshift(channel_data_int, -8));
+% Reshape back to samples x channels
+int_data = reshape(int_data, num_samples, num_channels);
+
+% Handle two's complement for 24-bit signed data
+sign_mask = int_data >= 2^23;
+int_data(sign_mask) = int_data(sign_mask) - 2^24;
+
+% Convert to voltages
+volt_data = int_data * 7.9473e-8;
+
+% Define sampling rate (in Hz)
+sampling_rate = 1000; % Example value, replace with actual rate
+time = (0:num_samples-1) / sampling_rate;
+
+% Plot each channel
+figure;
+for channel = 1:num_channels
+    subplot(num_channels, 1, channel);
+    plot(time, volt_data(:, channel));
+    title(['Channel ' num2str(channel)]);
+    xlabel('Time (s)');
+    ylabel('Voltage (V)');
 end
 
-% Apply scaling factor (as per your previous code)
-scaling_factor = 7.9473e-8; % From your Python code
-data = data * scaling_factor;
+% Adjust layout
+tightfig;
 
-% Plot the data
-figure(1)
-for a = 1:num_channels
-    subplot(4, 2, a)
-    plot(data(a, :))
-    title(['Channel ', num2str(a)])
-    % ylim([-1000, 1000]) % Uncomment and adjust if you want to limit the y-axis
-end
-hold on

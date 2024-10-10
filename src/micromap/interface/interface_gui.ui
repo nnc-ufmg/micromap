@@ -79,7 +79,7 @@
            <string/>
           </property>
           <property name="pixmap">
-           <pixmap>../../../../../../../Desktop/micromap exe/Micromap_splash_white.png</pixmap>
+           <pixmap>../../../../../../Desktop/micromap exe/Micromap_splash_white.png</pixmap>
           </property>
           <property name="scaledContents">
            <bool>true</bool>
@@ -1091,7 +1091,7 @@
             </widget>
             <widget class="QFrame" name="channel_32_area">
              <property name="enabled">
-              <bool>true</bool>
+              <bool>false</bool>
              </property>
              <property name="geometry">
               <rect>
@@ -1234,7 +1234,7 @@
                <item row="3" column="1">
                 <widget class="QRadioButton" name="C28_button">
                  <property name="enabled">
-                  <bool>true</bool>
+                  <bool>false</bool>
                  </property>
                  <property name="text">
                   <string notr="true">Ch. 28</string>

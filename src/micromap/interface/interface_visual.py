@@ -41,7 +41,7 @@ import os
 import platform
 from datetime import datetime, timedelta
 from PyQt5 import QtWidgets, uic    
-from PyQt5.QtCore import QObject, QThread, pyqtSignal, QCoreApplication, QTimer, QRunnable, QThreadPool
+from PyQt5.QtCore import QObject, QThread, pyqtSignal, QCoreApplication, QTimer, QRunnable, QThreadPool, QMutex
 from PyQt5.QtWidgets import QMessageBox, QMainWindow
 from tkinter import Tk 
 from tkinter.filedialog import (asksaveasfilename as save_dir_popup)
@@ -52,61 +52,64 @@ from pyqtgraph.Qt import QtGui
 from pyqtgraph import mkPen
 import pyqtgraph
 
+mutex = QMutex()
+
 class WorkerSignals(QObject):
     data_signal = pyqtSignal(list)
 
 class DataReceiver(QRunnable):
-    def __init__(self, data_buffers, lock, signals, file_writer, bytes_to_read, usb_port):
+    def __init__(self, data_buffers, is_recording_mode, save_directory, bytes_to_read, usb_port):
         super().__init__()
         self.data_buffers = data_buffers
         self.num_channels = len(data_buffers)
-        self.lock = lock
-        self.signals = signals
         self.running = True
-        self.file_writer = file_writer
+        self.is_recording_mode = is_recording_mode 
+        save_directiory = save_directory + ".bin"
+        self.data_file = open(save_directiory, "wb")
         self.bytes_to_read = bytes_to_read
-        self.unpack_format = "<" + str(int(self.num_channels)) + "h"
+        unpack_sequence = str(int(self.bytes_to_read/2))                                                                # Divide by 2 because each sample is 2 bytes
+        self.unpack_format = "<" + unpack_sequence + "h"                                                                # Format for unpacking binary data ('h' -> short integer, '<' -> little endian, 'unpack_sequence' -> number of samples)
 
-        self.usb = interface_functions.usb_singleton(usb_port, 50000000)                                        # Configures the USB connection
-        self.usb.connect()                                                                                      # Connect the USB port
-
-    def run(self):
-        self.usb.request_acquisition()                                                                                  # Command to starts the data acquisition (send to Arduino)
+        self.usb = interface_functions.usb_singleton(usb_port, 50000000)                                                # Configures the USB connection
+        self.usb.connect()                                                                                              # Connect the USB port
         
-        print(self.bytes_to_read)
+    def run(self):
+        self.usb.clear_buffer()                                                                                         # Clean the buffer
+        self.usb.request_acquisition()                                                                                  # Command to starts the data acquisition (send to Arduino)
 
         while self.running:
             # Read data from the USB serial port
             if self.usb.port.in_waiting >= self.bytes_to_read:
+                mutex.lock()                                                                                            # Lock the mutex to avoid data corruption
                 #try:
                 byte_data = self.usb.port.read(self.bytes_to_read)
-                integer_data = struct.unpack(self.unpack_format, byte_data)                                                         # Transforms binary data in integer with the string in format "self.unpack_format" (two's complement little edian)
+                byte_data = bytearray(byte_data)                                                                        # Transforms binary data in byte array
+                integer_data = struct.unpack(self.unpack_format, byte_data)                                             # Transforms binary data in integer with the string in format "self.unpack_format" (two's complement little edian)
 
-                # Thread-safe buffer management
-                with self.lock:
-                    for i in range(0, self.num_channels):
-                        self.data_buffers[i].append(integer_data[i])  # Add data to the correct channel
-                # Save data to file
-                # self.file_writer.writerow(byte_data)
+                for i in range(self.num_channels):
+                    self.data_buffers[i].extend(integer_data[i::self.num_channels])                                     # Add data to the correct channel
+                
+                if self.is_recording_mode:
+                    # Save data to file
+                    self.data_file.write(byte_data)
+                mutex.unlock()                                                                                          # Unlock the mutex                                                
 
     def stop(self):
         self.running = False
-        self.usb.stop_acquisition()                                                                             # Stops the acquisition in Arduino
-        self.usb.disconnect()                                                                                   # Disconnect the USB port
+        self.usb.stop_acquisition()                                                                                     # Stops the acquisition in Arduino
+        self.usb.disconnect()                                                                                           # Disconnect the USB port
 
 class PlotUpdater(QRunnable):
-    def __init__(self, data_buffers, lock, signals, curves, channel_numbers):
+    def __init__(self, data_buffers, curves, channel_numbers):
         super().__init__()
         self.data_buffers = data_buffers
         self.num_channels = len(data_buffers)
-        self.lock = lock
-        self.signals = signals
         self.curves = curves
         self.channel_numbers = channel_numbers
 
     def run(self):
         for i in range(self.num_channels):
-            micro_volts_data = (0.195e-6)*numpy.array(self.data_buffers[i])                                                        # Transforms data to Volts (0.195*1e-6 -> datasheet) and adds a scale factor to plot (100 -> arbitrary)
+            micro_volts_data = 1000*(0.195e-6)*numpy.array(self.data_buffers[i])                                             # Transforms data to Volts (0.195*1e-6 -> datasheet) and adds a scale factor to plot (100 -> arbitrary)
             micro_volts_data = micro_volts_data + self.channel_numbers[i]  
 
             self.curves[i].setData(micro_volts_data)
@@ -145,11 +148,8 @@ class interface_visual_gui(QMainWindow):
         self.plot_timer.timeout.connect(self.request_plot_update)
 
         # Signal object for communication
-        self.signals = WorkerSignals()
-        self.signals.data_signal.connect(self.save_data)
-
-        self.data_file = open("data.csv", "w", newline="")
-        self.file_writer = csv.writer(self.data_file)
+        # self.signals = WorkerSignals()
+        # self.signals.data_signal.connect(self.save_data)
 
         # Variables for threads
         self.data_receiver = None
@@ -252,10 +252,16 @@ class interface_visual_gui(QMainWindow):
             return
         
         command = "C500FF00"
-        command = int('0x' + command, 16).to_bytes(4,'big')                                                 # Modificates the command to send to Arduino
+        command = int('0x' + command, 16).to_bytes(4,'big')                                                     # Modificates the command to send to Arduino
 
         self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)                           # Configures the USB connection
-        self.usb.connect()                                                                                      # Connect the USB port
+        
+        usb_is_conected = self.usb.connect()                                                                    # Connect the USB port
+
+        if usb_is_conected == False:
+            self.warning_message_function("The USB port selected is not connected")
+            self.chip_combobox.setCurrentIndex(0)
+            return False
         
         answer = self.usb.send_direct(command)                                                                  # Establishes the direct communication to ITAM
         
@@ -264,10 +270,8 @@ class interface_visual_gui(QMainWindow):
         self.usb.disconnect()                                                                                   # Disconnect the USB port
 
         if chip == "RHD2216" and intan_id == "1":
-            self.warning_message_function("Intan RHD2216 not found. Please, check the USB port or if the chip connected is an Intan RHD2132")
             return False
         elif chip == "RHD2132" and intan_id == "2":
-            self.warning_message_function("Intan RHD2132 not found. Please, check the USB port or if the chip connected is an Intan RHD2216")
             return False
         else:
             return True
@@ -463,7 +467,7 @@ class interface_visual_gui(QMainWindow):
         channels.append(self.C30_button.isChecked())                                                            # Checks if a certain channel is active (True or False)
         channels.append(self.C31_button.isChecked())                                                            # Checks if a certain channel is active (True or False)
         channels.append(self.C32_button.isChecked())                                                            # Checks if a certain channel is active (True or False)
-        
+
         channels = numpy.multiply(channels, 1)                                                                  # Transforms "True" in 1 and "False" in 0
         self.options.set_channels(channels)                                                                     # Changes the channels option in the acquisition object
         self.number_channels_lineshow.setText(str(self.options.number_channels))                                # Changes the line edit (Record tab) in the interface
@@ -504,12 +508,13 @@ class interface_visual_gui(QMainWindow):
         self.usb = interface_functions.usb_singleton(self.options.usb_port, 50000000)                           # Configures the USB connection
         self.usb.connect()                                                                                      # Connect the USB port
         
+        self.usb.reset_arduino()                                                                                # Resets the Arduino
         self.usb.set_sampling_frequency(self.options.sampling_frequency)                                        # Sets the sampling frequency
         self.usb.set_highpass_frequency(self.highpass_frequency_slider.value())                                 # Sets the Highpass Filter frequency
         self.usb.set_lowpass_frequency(self.lowpass_frequency_slider.value())                                   # Sets the Lowpass Filter frequency
         self.usb.set_channel_0to15(self.options.channels_bool)                                                  # Sets the 0-15 channels
         self.usb.set_channel_16to31(self.options.channels_bool)                                                 # Sets the 16-32 channels
-        
+
         self.usb.disconnect()                                                                                   # Disconnects USB port
 
 #%% VIEW MODE FUNCTIONS
@@ -522,6 +527,7 @@ class interface_visual_gui(QMainWindow):
         '''
         chip_check = self._check_chip(self.options.chip)
         if chip_check == False:
+            self.warning_message_function("The chip selected was not found. Please, check the USB port or if the chip connected is correct")
             return
 
         self.get_time_configuration_function()                                                                  # Calls the function to define the record time 
@@ -548,24 +554,29 @@ class interface_visual_gui(QMainWindow):
     
     def start_threads(self, plot_real_time = True):        
         self.curves = []
+        
+        print(self.options.number_channels)
         for i in range(self.options.number_channels):
-            pen = pyqtgraph.mkPen(color = (i*self.options.number_channels, 100, 200), width = 1)
+            pen = pyqtgraph.mkPen(color = 'white', width = 1)
             curve = self.plot_viewer.plot(pen = pen)
             self.curves.append(curve)        
         
-        self.bytes_to_read = int(2*self.options.number_channels)                                                        # Number of bytes to be read at a time (in this case, at a time will be read 1 sample = 2 bytes per channel)          
+        print(len(self.curves))
+
+        bytes_per_read = 100
+        self.bytes_to_read = int(bytes_per_read*2*self.options.number_channels)                                         # Number of bytes to be read at a time (in this case, at a time will be read 1 sample = 2 bytes per channel)          
         self.buffer_length = 2*self.options.sampling_frequency                                                          # Buffer length to store 1 second of record
         self.data_buffers = [collections.deque(maxlen=self.buffer_length) for _ in range(self.options.number_channels)] # Circular buffer for each channel
         self.unpack_format = "<" + str(self.buffer_length/2) + "h"
 
         # Start the data receiver in the thread pool
-        self.data_receiver = DataReceiver(self.data_buffers, self.lock, self.signals, self.file_writer, 
-                                          self.bytes_to_read, self.options.usb_port)
+        self.data_receiver = DataReceiver(self.data_buffers, self.options.is_recording_mode,
+                                          self.options.save_directory, self.bytes_to_read, self.options.usb_port)
         self.thread_pool.start(self.data_receiver)
 
         if plot_real_time:
             # Start the timer for plot updates
-            update_interval = int(0.5 * 1000)  # Convert seconds to milliseconds
+            update_interval = int(0.1 * 1000)  # Convert seconds to milliseconds
             self.plot_timer.start(update_interval)
 
     def stop_threads(self):
@@ -578,12 +589,9 @@ class interface_visual_gui(QMainWindow):
         self.plot_timer.stop()
         self.plot_viewer.clear()
 
-    def save_data(self):
-        pass
-
     def request_plot_update(self):
         # Use the thread pool to handle the plot update task
-        self.plot_updater = PlotUpdater(self.data_buffers, self.lock, self.signals, self.curves, self.options.channels)
+        self.plot_updater = PlotUpdater(self.data_buffers, self.curves, self.options.channels)
         self.thread_pool.start(self.plot_updater)
 
 #%% RECORDING MODE FUNCTIONS

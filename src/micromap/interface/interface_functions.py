@@ -27,6 +27,7 @@
 
 import matplotlib
 import serial
+import time
 matplotlib.use('Qt5Agg')
 from numpy import where, array
 
@@ -205,8 +206,12 @@ class usb_singleton():
         
         This function connect the USB port
         '''
-        self.port = serial.Serial(self.usb_port, self.baund_rate)               # Initializes the USB port with the especified parameters
-        
+        try:
+            self.port = serial.Serial(self.usb_port, self.baund_rate)               # Initializes the USB port with the especified parameters
+            return True                                                             # Returns "True" if the connection was successful
+        except:
+            return False                                                            # Returns "False" if the connection was unsuccessful
+
     def disconnect(self):
         '''Disconnect
         
@@ -228,6 +233,23 @@ class usb_singleton():
         connection_ok = self.port.read(4)                                       # Reads the 4bytes answer message
         return connection_ok                                                    # Returns the answer message
     
+    def clear_buffer(self):
+        '''Clear buffer
+        
+        This function clears the USB port buffer
+        '''
+        self.port.reset_input_buffer()                                          # Clears the USB port buffer
+        self.port.reset_output_buffer()                                         # Clears the USB port buffer
+
+    def reset_arduino(self):
+        '''Reset arduino
+        
+        This function sends a reset command to the microcontroller
+        '''
+        self.port.setDTR(False)
+        time.sleep(0.1)
+        self.port.setDTR(True)
+
     def request_acquisition(self):
         '''Request acquisition
         

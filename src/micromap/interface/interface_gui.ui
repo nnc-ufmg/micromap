@@ -1233,9 +1233,6 @@
                </item>
                <item row="3" column="1">
                 <widget class="QRadioButton" name="C28_button">
-                 <property name="enabled">
-                  <bool>false</bool>
-                 </property>
                  <property name="text">
                   <string notr="true">Ch. 28</string>
                  </property>

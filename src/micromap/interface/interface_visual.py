@@ -55,7 +55,7 @@ import pyqtgraph
 mutex = QMutex()
 
 class WorkerSignals(QObject):
-    data_signal = pyqtSignal(list)
+    update_progress_bar = pyqtSignal(int)
 
 class DataReceiver(QRunnable):
     def __init__(self, data_buffers, is_recording_mode, save_directory, bytes_to_read, usb_port):
@@ -109,12 +109,44 @@ class PlotUpdater(QRunnable):
 
     def run(self):
         for i in range(self.num_channels):
-            micro_volts_data = 1000*(0.195e-6)*numpy.array(self.data_buffers[i])                                             # Transforms data to Volts (0.195*1e-6 -> datasheet) and adds a scale factor to plot (100 -> arbitrary)
+            micro_volts_data = 1000*(0.195e-6)*numpy.array(self.data_buffers[i])                                        # Transforms data to Volts (0.195*1e-6 -> datasheet) and adds a scale factor to plot (100 -> arbitrary)
             micro_volts_data = micro_volts_data + self.channel_numbers[i]  
 
             self.curves[i].setData(micro_volts_data)
 
 #%% INTERFACE CLASS
+
+class TimerUpdater(QRunnable):
+    def __init__(self, init_time, run_time_lineshow, sampling_frequency, collected_data_lineshow, total_time, progress_bar_signal = 0):
+        super().__init__()
+        self.init_time = init_time
+        self.run_time_lineshow = run_time_lineshow
+        self.sampling_frequency = sampling_frequency
+        self.progress_bar_signal = progress_bar_signal
+        self.collected_data_lineshow = collected_data_lineshow
+        self.total_time = total_time
+
+    def run(self):
+        self.record_time_estimate = round(time.perf_counter() - self.init_time)                                 # Calculates the current acquisition time 
+        self.run_time_lineshow.setText(str(timedelta(seconds = self.record_time_estimate)))                  # Changes the line edit (Record tab) in the interface
+        
+        self.amount_data_estimate = self.record_time_estimate*self.sampling_frequency                       # Estimates the total sample that should have been collected so far
+        self.collected_data_lineshow.setText(str(round(self.amount_data_estimate)))                         # Shows the estimate in the line edit
+        
+        self.progress_bar_total = self.total_time*self.sampling_frequency                                   # Expected total of samples
+        self.progress_bar_porcentage = round((self.amount_data_estimate/self.progress_bar_total)*100)       # Updates the progress bar according to the estimate
+        if self.progress_bar_porcentage <= 100:                                                             # If estimated progress is less than 100%
+            # emit signal to interface
+            self.progress_bar_signal.update_progress_bar.emit(self.progress_bar_porcentage)                 # Updates the progress
+        elif self.progress_bar_porcentage <= 0:                                                             # If estimated progress is more than 100%
+            self.progress_bar_signal.update_progress_bar.emit(0)                                            # Updates the progress
+        else:                                                                                               # If estimated progress is more than 100% 
+            self.progress_bar_signal.update_progress_bar.emit(self.progress_bar_porcentage)                 # Updates the progress
+
+    def clear(self):
+        self.run_time_lineshow.setText("--:--:--")                                                          # Changes the line edit (Record tab) in the interface
+        self.collected_data_lineshow.setText("--")                                                          # Changes the line edit (Record tab) in the interface
+        self.progress_bar.setValue(0)                                                                       # Updates the progress bar to 0
 
 class interface_visual_gui(QMainWindow):
     '''Interface visual gui
@@ -147,9 +179,12 @@ class interface_visual_gui(QMainWindow):
         self.plot_timer = QTimer()
         self.plot_timer.timeout.connect(self.request_plot_update)
 
+        self.timer_updater_timer = QTimer()
+        self.timer_updater_timer.timeout.connect(self.request_timer_update)
+
         # Signal object for communication
-        # self.signals = WorkerSignals()
-        # self.signals.data_signal.connect(self.save_data)
+        self.signals = WorkerSignals()
+        self.signals.update_progress_bar.connect(self.progress_bar_updater)
 
         # Variables for threads
         self.data_receiver = None
@@ -184,7 +219,7 @@ class interface_visual_gui(QMainWindow):
         self.stop_button.clicked.connect(self.stop_function)                                                    # Called when stop button is clicked
         self.record_button.clicked.connect(self.start_view_mode_function)                                       # Called when the clear button is clicked 
         self.plot_next_button.clicked.connect(self.request_plot_update)                                         # Called when the "plot the last samples" button is clicked
-        self.update_statistics_button.clicked.connect(self.update_statistics_function)                          # Called when the "update statistics" button is clicked
+        # self.update_statistics_button.clicked.connect(self.update_statistics_function)                          # Called when the "update statistics" button is clicked
                      
 #%% INTERFACE SELECTIONS FUNCTIONS
         
@@ -555,13 +590,10 @@ class interface_visual_gui(QMainWindow):
     def start_threads(self, plot_real_time = True):        
         self.curves = []
         
-        print(self.options.number_channels)
         for i in range(self.options.number_channels):
             pen = pyqtgraph.mkPen(color = 'white', width = 1)
             curve = self.plot_viewer.plot(pen = pen)
             self.curves.append(curve)        
-        
-        print(len(self.curves))
 
         bytes_per_read = 100
         self.bytes_to_read = int(bytes_per_read*2*self.options.number_channels)                                         # Number of bytes to be read at a time (in this case, at a time will be read 1 sample = 2 bytes per channel)          
@@ -578,6 +610,10 @@ class interface_visual_gui(QMainWindow):
             # Start the timer for plot updates
             update_interval = int(0.1 * 1000)  # Convert seconds to milliseconds
             self.plot_timer.start(update_interval)
+        else:
+            timer_updater_interval = int(1 * 1000)  # Convert seconds to milliseconds
+            self.initial_time = time.perf_counter()
+            self.timer_updater_timer.start(timer_updater_interval)
 
     def stop_threads(self):
         # Stop data receiver and plot updater
@@ -588,6 +624,25 @@ class interface_visual_gui(QMainWindow):
         # Stop the timer
         self.plot_timer.stop()
         self.plot_viewer.clear()
+        
+        try:
+            self.timer_updater.clear()
+            self.timer_updater_timer.stop()
+        except:
+            pass
+
+    def request_timer_update(self):
+        total_time = self.options.get_total_time()
+        self.timer_updater = TimerUpdater(self.initial_time, self.run_time_lineshow, self.options.sampling_frequency, 
+                                          self.collected_data_lineshow, total_time, self.signals)
+        self.thread_pool.start(self.timer_updater)
+
+    def progress_bar_updater(self, value):
+        self.progress_bar.setValue(value)
+        if value == 100:
+            self.stop_threads()
+            self.options.record_time = time.perf_counter() - self.initial_time
+            self.successful_function()
 
     def request_plot_update(self):
         # Use the thread pool to handle the plot update task
@@ -616,13 +671,13 @@ class interface_visual_gui(QMainWindow):
             self.warning_message_function(text)                                                                 # Displays a message in the edit line of the interface
             return
         
-        try:
-            self.start_threads(plot_real_time = False)                                                          # Restart the acquisition and plot threads
-        except:
-            text = str('\nWARNING: The interface failed to try to start the threads responsible' +
-                       ' for signal acquisition')                                                               # Message to be displeyed
-            self.warning_message_function(text)                                                                 # Displays a message in the edit line of the interface
-            return
+        #try:
+        self.start_threads(plot_real_time = False)                                                          # Restart the acquisition and plot threads
+        # except:
+        #     text = str('\nWARNING: The interface failed to try to start the threads responsible' +
+        #                ' for signal acquisition')                                                               # Message to be displeyed
+        #     self.warning_message_function(text)                                                                 # Displays a message in the edit line of the interface
+        #     return
         
         self.plot_next_button.setEnabled(True)                                                                  # Enables the button to plot the last values acquired
         self.start_recording_button.setEnabled(False)                                                           # Disables the strat recording button
@@ -666,11 +721,6 @@ class interface_visual_gui(QMainWindow):
 #%% WARNING FUNCTIONS
     
     def successful_function(self):
-        self.data_worker.finish_record()                                                                        # Finishes the record
-        self.update_statistics_function()                                                                       # Calls the update statistics function
-        
-        self.stop_timers_function()                                                                             # Calls the stop timers function
-        
         self.options.is_recording_mode = False                                                                  # Changes the recording mode flag to 'false'
         self.options.save_directory = "None"                                                                    # Change the save directory on main variables dictionary
         
@@ -748,67 +798,6 @@ class interface_visual_gui(QMainWindow):
         answer_yes.setText('    OK    ')                                                                        # Rename the button "ok"
         warning.exec_()                                                                                         # Execute the message box
 
-#%% TIMER FUNCTIONS
-
-    def start_timers_function(self):
-        '''Start timers function
-        
-        This public function starts the user-programmed timer for the duration of the experiment.
-        '''
-
-        '''
-        # TODO This function is not working properly. 
-        It is not showing the correct time in at the end of the experiment.
-        Find out why and fix it.
-        '''
-
-        self.timer = QTimer(self)                                                                               # Initializes the timer to end the data acquisition
-        self.timer.setInterval(self.options.get_total_time()*1000)                                              # The timer is in milliseconds, so multiply the total time by 1000
-        self.timer.setSingleShot(True)                                                                          # Sets the timer to shot only one time
-        self.timer.timeout.connect(self.successful_function)                                                    # Called when timer time is reached 
-        
-        self.directory_timer = QTimer(self)                                                                     # Initializes the timer to end the data acquisition
-        self.directory_timer.setInterval(int(3.6e6))                                                            # Sets the interval time to 1 hour
-        self.directory_timer.setSingleShot(False)                                                               # Sets the timer to shot all times
-        self.directory_timer.timeout.connect(self.change_direcotory_function)                                   # Calls the change directory function when the timer is reached
-        
-        self.update_statistics_timer = QTimer(self)                                                             # Initializes the timer to end the data acquisition
-        self.update_statistics_timer.setInterval(int(self.options.get_total_time()*50))                         # Sets the interval time to 2% of total time
-        self.update_statistics_timer.setSingleShot(False)                                                       # Sets the timer to shot all times
-        self.update_statistics_timer.timeout.connect(self.update_statistics_function)                           # Calls the update statistics function when the timer is reached
-
-        self.update_statistics_timer.start()                                                                    # Starts the update statistic timer
-        self.directory_timer.start()                                                                            # Starts the directory timer
-        self.timer.start()                                                                                      # Starts the general timer
-        
-        self.start_time_estimate = time.perf_counter()                                                          # Gets the time to update the progress statistics
-    
-    def stop_timers_function(self):
-        if self.options.is_recording_mode == True:                                                              # If recording mode flag is 'true'
-            self.update_statistics_timer.stop()                                                                 # Stops the update statistics timer
-            self.directory_timer.stop()                                                                         # Stops the directory timer
-    
-    def update_statistics_function(self):
-        '''Update statistics function
-        
-        This public function is called when the "update statistics" button is clicked. It aims 
-        to update the progress bar, the experiment time and estimate the amount of samples 
-        acquired.
-        '''
-        self.record_time_estimate = round(time.perf_counter() - self.start_time_estimate)                       # Calculates the current acquisition time 
-        self.run_time_lineshow.setText(str(timedelta(seconds=self.record_time_estimate)))                       # Changes the line edit (Record tab) in the interface
-        
-        if self.options.is_recording_mode == True:                                                              # If recording mode flag is 'true'
-            self.amount_data_estimate = self.record_time_estimate*self.options.sampling_frequency               # Estimates the total sample that should have been collected so far
-            self.collected_data_lineshow.setText(str(round(self.amount_data_estimate)))                         # Shows the estimate in the line edit
-            
-            self.progress_bar_total = self.options.get_total_time()*self.options.sampling_frequency             # Expected total of samples
-            self.progress_bar_porcentage = round((self.amount_data_estimate/self.progress_bar_total)*100)       # Updates the progress bar according to the estimate
-            if self.progress_bar_porcentage <= 100:                                                             # If estimated progress is less than 100%
-                self.progress_bar.setValue(self.progress_bar_porcentage)                                        # Updates the bar progress
-            else:                                                                                               # If estimated progress is more than 100% 
-                self.progress_bar.setValue(100)                                                                 # Updates the progress bar to 100%
-
 #%% CONTOL FUNCTIONS
     
     def change_direcotory_function(self):
@@ -852,8 +841,7 @@ class interface_visual_gui(QMainWindow):
        
     # Function to cancel the data acquisition     
     def cancel_function(self):
-        self.stop_threads()                                                                                     # Closes the usb port thread
-        self.stop_timers_function()                                                                             # Stops the timers
+        self.stop_threads()                                                                                     # Closes the usb port threas
         self.plot_viewer_function(self.options.number_channels)                                                 # Sets the Y axis range and scale  
 
         self.is_recording_mode = False                                                                          # Change the recording mode flag to 'false'
@@ -885,7 +873,6 @@ class interface_visual_gui(QMainWindow):
         self.tabWidget.setCurrentIndex(0)                                                                       # Changes to configuration tab                                                                          
         
     def closeEvent(self, event):                                                                    
-        self.stop_timers_function()                                                                             # Stops the timers
         self.stop_threads()
         self.thread_pool.waitForDone()
         super().closeEvent(event)

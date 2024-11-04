@@ -39,12 +39,13 @@ import collections
 import interface_functions as interface_functions      
 import os
 import platform
+import pickle
 from datetime import datetime, timedelta
 from PyQt5 import QtWidgets, uic    
 from PyQt5.QtCore import QObject, QThread, pyqtSignal, QCoreApplication, QTimer, QRunnable, QThreadPool, QMutex
 from PyQt5.QtWidgets import QMessageBox, QMainWindow
 from tkinter import Tk 
-from tkinter.filedialog import (asksaveasfilename as save_dir_popup)
+from tkinter.filedialog import (askdirectory as save_dir_popup)
 import threading
 import csv
 
@@ -58,14 +59,14 @@ class WorkerSignals(QObject):
     update_progress_bar = pyqtSignal(int)
 
 class DataReceiver(QRunnable):
-    def __init__(self, data_buffers, is_recording_mode, save_directory, bytes_to_read, usb_port):
+    def __init__(self, data_buffers, is_recording_mode, data_file, bytes_to_read, usb_port):
         super().__init__()
         self.data_buffers = data_buffers
         self.num_channels = len(data_buffers)
         self.running = True
         self.is_recording_mode = is_recording_mode 
-        save_directiory = save_directory + ".bin"
-        self.data_file = open(save_directiory, "wb")
+        
+        self.data_file = open(data_file, "wb")
         self.bytes_to_read = bytes_to_read
         unpack_sequence = str(int(self.bytes_to_read/2))                                                                # Divide by 2 because each sample is 2 bytes
         self.unpack_format = "<" + unpack_sequence + "h"                                                                # Format for unpacking binary data ('h' -> short integer, '<' -> little endian, 'unpack_sequence' -> number of samples)
@@ -181,6 +182,9 @@ class interface_visual_gui(QMainWindow):
 
         self.timer_updater_timer = QTimer()
         self.timer_updater_timer.timeout.connect(self.request_timer_update)
+
+        self.record_timer = QTimer()
+        self.record_timer.timeout.connect(self.complete_record)
 
         # Signal object for communication
         self.signals = WorkerSignals()
@@ -606,14 +610,19 @@ class interface_visual_gui(QMainWindow):
                                           self.options.save_directory, self.bytes_to_read, self.options.usb_port)
         self.thread_pool.start(self.data_receiver)
 
-        if plot_real_time:
-            # Start the timer for plot updates
-            update_interval = int(0.1 * 1000)  # Convert seconds to milliseconds
-            self.plot_timer.start(update_interval)
-        else:
-            timer_updater_interval = int(1 * 1000)  # Convert seconds to milliseconds
+        if not plot_real_time:
+            record_time = self.options.get_total_time()
+            print(record_time)
+            record_time = record_time * 1000
+            self.record_timer.start(record_time)
+            
+            timer_updater_interval = int(60 * 1000)  # Convert seconds to milliseconds
             self.initial_time = time.perf_counter()
             self.timer_updater_timer.start(timer_updater_interval)
+        else:
+            # Start the timer for plot updates
+            update_interval = int(2 * 1000)  # Convert seconds to milliseconds
+            self.plot_timer.start(update_interval)
 
     def stop_threads(self):
         # Stop data receiver and plot updater
@@ -631,18 +640,26 @@ class interface_visual_gui(QMainWindow):
         except:
             pass
 
+        try:
+            self.record_timer.stop()
+        except:
+            print("Record timer not started")
+            pass
+
     def request_timer_update(self):
         total_time = self.options.get_total_time()
         self.timer_updater = TimerUpdater(self.initial_time, self.run_time_lineshow, self.options.sampling_frequency, 
                                           self.collected_data_lineshow, total_time, self.signals)
         self.thread_pool.start(self.timer_updater)
 
+    def complete_record(self):
+        self.progress_bar.setValue(100)
+        self.stop_threads()
+        self.options.record_time = time.perf_counter() - self.initial_time
+        self.successful_function()
+
     def progress_bar_updater(self, value):
         self.progress_bar.setValue(value)
-        if value == 100:
-            self.stop_threads()
-            self.options.record_time = time.perf_counter() - self.initial_time
-            self.successful_function()
 
     def request_plot_update(self):
         # Use the thread pool to handle the plot update task
@@ -655,20 +672,31 @@ class interface_visual_gui(QMainWindow):
         self.stop_threads()
 
         try:
-            Tk().withdraw()                                                                                     # Hide a Tk window
-            save_directory = save_dir_popup(filetypes=(("Save file","*.bin"),("All files","*")))                # Opens the computer directorys to chose the save file
-            if save_directory == '':                                                                            # If nameless  
-                self.options.save_directory = "None"                                                            # Name with "None"
-                self.view_mode_function()                                                                       # Starts view mode function
-                return
-            else:
-                self.experiment_name_lineshow.setText(save_directory.split("/")[-1])                            # Sets the name in directory
-                self.options.save_directory = save_directory                                                    # Changes the save directory on main variables dictionary
-                self.options.is_recording_mode = True                                                           # Changes the recording mode flag to "true"
-        except:
-            text = str('\nWARNING: The interface failed to create the binary file,' + 
-                       ' please select a valid directory')                                                      # Message to be displeyed
-            self.warning_message_function(text)                                                                 # Displays a message in the edit line of the interface
+            Tk().withdraw()                                                                                             # Hide a Tk window
+            save_directory = save_dir_popup(title = "Select the directory to save the data")                             # Opens a window to select the directory to save the data
+            str_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")                                                     # Creates a string with the current date and time
+            save_directory = save_directory + "/record_" + str_time + ".mmap"       
+
+            # check if the directory exists
+            if not os.path.exists(save_directory):
+                os.makedirs(save_directory)
+
+            file_name = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")                                                        # Creates a string with the current date and time
+            file_name = 'data_' + file_name +  ".bin"                                                                       # Adds a prefix to the file name  
+            save_directory = save_directory + "/" + file_name                                                                    # Creates the file path
+
+            if save_directory == '':                                                                                    # If nameless  
+                self.options.save_directory = "None"                                                                    # Name with "None"
+                self.view_mode_function()                                                                               # Starts view mode function
+                return      
+            else:       
+                self.experiment_name_lineshow.setText(save_directory.split("/")[-1])                                    # Sets the name in directory
+                self.options.save_directory = save_directory                                                            # Changes the save directory on main variables dictionary
+                self.options.is_recording_mode = True                                                                   # Changes the recording mode flag to "true"
+        except:     
+            text = str('\nWARNING: The interface failed to create the binary file,' +       
+                       ' please select a valid directory')                                                              # Message to be displeyed
+            self.warning_message_function(text)                                                                         # Displays a message in the edit line of the interface
             return
         
         #try:
@@ -681,7 +709,8 @@ class interface_visual_gui(QMainWindow):
         
         self.plot_next_button.setEnabled(True)                                                                  # Enables the button to plot the last values acquired
         self.start_recording_button.setEnabled(False)                                                           # Disables the strat recording button
-            
+
+
 #%% ADVANCED SETTINGS FUNCTIONS
 
     def continue_to_record_function(self):
@@ -722,12 +751,18 @@ class interface_visual_gui(QMainWindow):
     
     def successful_function(self):
         self.options.is_recording_mode = False                                                                  # Changes the recording mode flag to 'false'
-        self.options.save_directory = "None"                                                                    # Change the save directory on main variables dictionary
-        
+            
         text = str('Data acquisition completed successfully \n\n' +
                    'Duration: {}\n'.format(timedelta(seconds = round(self.options.record_time))))               # Text to be showed in warning message
         self.warning_message_function(text)                                                                     # Shows a warning message
         
+        options_resume = self.options.resume_options()                                                          # Gets the data resume
+        options_resume_file = self.options.save_directory[:-4] + '_options_resume.pkl'                          # Creates the file name to write the resume
+        with open(options_resume_file, 'wb') as file:                                                           # Opens the file to write the resume
+            pickle.dump(options_resume, file)                                                                   # Writes the resume in the file
+
+        self.options.save_directory = "None"                                                                    # Change the save directory on main variables dictionary
+
         self.frequency_config_area.setEnabled(True)                                                             # Enables all the configuration tab
         self.channel_config_area.setEnabled(True)                                                               # Enables all the configuration tab                                                  
         self.record_config_area.setEnabled(True)                                                                # Enables all the configuration tab

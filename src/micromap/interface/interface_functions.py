@@ -184,8 +184,6 @@ class acquisition:
         self._resume["Save Direcoty"] = self.save_directory                                 # Updates the Save Directory in the "resume"
         
         return self._resume        
-           
-
 
 class usb_singleton():
     '''Usb singleton

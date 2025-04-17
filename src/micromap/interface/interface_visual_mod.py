@@ -35,6 +35,7 @@ import serial.tools.list_ports
 import time
 import struct
 import collections
+import queue
 #import micromap.interface.interface_functions as interface_functions  
 import interface_functions as interface_functions      
 import os
@@ -71,8 +72,13 @@ class DataReceiverThread(QThread):
         self.sampling_freq = sampling_freq
         self.is_recording_mode = is_recording_mode
         self.save_queue = save_queue
-        unpack_sequence = str(self.bytes_to_read // 2)
+        
+        valid_bytes = self.bytes_to_read - 2 * (self.num_channels + 1)  # Remove FEFE bytes
+        unpack_sequence = str(valid_bytes // 2)
         self.unpack_format = "<" + unpack_sequence + "h"
+
+        self.flag_indexes = [[i, i+1] for i in range(0, self.bytes_to_read, 2*(self.num_channels + 1))]
+        self.flag_indexes = numpy.array(self.flag_indexes).flatten()
 
     def run(self):
         self.running = True
@@ -84,13 +90,28 @@ class DataReceiverThread(QThread):
             if self.usb.port.in_waiting >= self.bytes_to_read:
                 try:
                     byte_data = self.usb.port.read(self.bytes_to_read)
-                    integer_data = struct.unpack(self.unpack_format, byte_data)
-                    channel_data = [integer_data[i::self.num_channels] for i in range(self.num_channels)]
-                    self.data_ready.emit(channel_data)
+                    print(f"Bytes> {byte_data.hex()}")  # Debug: print the raw byte data
+
+                    # Save raw data (including FEFE headers)
                     if self.is_recording_mode and self.save_queue:
                         self.save_queue.put(byte_data)
+
+                    # Remove FEFE bytes by deleting precomputed positions
+                    clean_bytes = bytearray(
+                        [b for i, b in enumerate(byte_data) if i not in self.flag_indexes]
+                    )
+
+                    print(f"Clean Bytes> {clean_bytes.hex()}")  # Debug: print the cleaned byte data
+
+                    values = struct.unpack(self.unpack_format, clean_bytes)
+
+                    # Split by channel
+                    channel_data = [values[i::self.num_channels] for i in range(self.num_channels)]
+                    self.data_ready.emit(channel_data)
+
                 except Exception as e:
                     print(f"Erro na aquisição: {e}")
+
         self.usb.stop_acquisition()
         self.usb.disconnect()
 
@@ -605,8 +626,8 @@ class interface_visual_gui(QMainWindow):
             curve = self.plot_viewer.plot(pen = pen)
             self.curves.append(curve)        
 
-        bytes_per_read = 100
-        self.bytes_to_read = int(bytes_per_read*2*self.options.number_channels)                                         # Number of bytes to be read at a time (in this case, at a time will be read 1 sample = 2 bytes per channel)          
+        bytes_per_read = 5
+        self.bytes_to_read = int(bytes_per_read*(2*(self.options.number_channels + 1)))                                   # Number of bytes to be read at a time (in this case, at a time will be read 1 sample = 2 bytes per channel + 1 byte header)          
         self.buffer_length = 2*self.options.sampling_frequency                                                          # Buffer length to store 1 second of record
         self.scroll_index = 0
         self.window_size = 500
@@ -708,7 +729,7 @@ class interface_visual_gui(QMainWindow):
         if self.scroll_index > 10000:
             self.scroll_index = 0
 
-        self.request_plot_update()
+        # self.request_plot_update()
 
     def start_recording_mode_function(self):
         self.stop_threads()

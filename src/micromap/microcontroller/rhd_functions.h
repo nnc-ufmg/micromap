@@ -104,7 +104,7 @@ class intan_rhd_chip_class
     
     int serial_pinout = 9;                                            // Output pin for chip selection
     int sync_pinout = 13;                                             // Output pin for syncronization trigger
-    uint16_t buffer[32];                                              // Buffer to store data from a single run of all channels (only up to 32 channels at once)
+    uint16_t buffer[32 + 1];                                          // Buffer to store data from a single run of all channels (only up to 32 channels at once)
     uint32_t packages_received = 0;                                   // Count total number of packages with channel DATA received from INTAN
     
     bool usb_serial_flag = true;                                      // USB connection flag
@@ -206,6 +206,8 @@ uint16_t intan_rhd_chip_class::transfer_data(uint16_t data)
  */
 void intan_rhd_chip_class::convert_channels()
 {  
+  // First 16 bits of the buffer are used as a header (0xFE00) to identify the package
+  buffer[0] = 0xFEFE; // Header of the package
   int channel_actual = 0;
   while (channel_actual < channel_count)
   {  
@@ -229,8 +231,8 @@ void intan_rhd_chip_class::convert_channels()
     if (dataWriteIntanOrTest) REG_SPI0_TDR = channel_sequence[channel_actual]; 
     else REG_SPI0_TDR = 0xFE00;
     while ((REG_SPI0_SR & SPI_SR_TXEMPTY) == 0) {}  
-    if (dataReadIntanOrTest) buffer[channel_actual] = REG_SPI0_RDR & 0xFFFF;
-    else buffer[channel_actual] = channel_sequence[channel_actual];
+    if (dataReadIntanOrTest) buffer[channel_actual + 1] = REG_SPI0_RDR & 0xFFFF;
+    else buffer[channel_actual + 1] = channel_sequence[channel_actual];
     
     asm volatile("nop"::);asm volatile("nop"::);
     asm volatile("nop"::);asm volatile("nop"::);
@@ -456,6 +458,8 @@ void intan_rhd_chip_class::build_channel_sequence(uint32_t p_channels)
       *(channel_sequence + channel_count) = channel << 8;         // Adds the channel in CONVERT(ch) command sequence.
       channel_count++;                                            // Adds the counting
     } 
+
+  uint16_t buffer[channel_count + 1];
 }
 
 /*  READ CHIP INFORMATION (ROM and RAM)
@@ -699,7 +703,13 @@ void intan_rhd_chip_class::treat_command(byte *command_buffer)
       command_buffer = default_answer;                      // Returns a random default confirmation message
       break;
   }
-  SerialUSB.write(command_buffer,4);                        // Sends back the answer message to USB serial port 
+  
+  // If the command is start acquisition, then the answer is not sent
+  if (command_buffer[0] != 0x11) 
+  {
+    SerialUSB.write(command_buffer,4);                        // Sends back the answer message to USB serial port 
+  }
+
 }
   
 #endif

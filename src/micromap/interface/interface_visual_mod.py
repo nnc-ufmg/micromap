@@ -59,62 +59,62 @@ mutex = QMutex()
 class WorkerSignals(QObject):
     update_progress_bar = pyqtSignal(int)
 
-class DataReceiver(QRunnable):
-    def __init__(self, data_buffers, is_recording_mode, data_file, bytes_to_read, usb_port):
-        super().__init__()
-        self.data_buffers = data_buffers
-        self.num_channels = len(data_buffers)
-        self.running = True
-        self.is_recording_mode = is_recording_mode 
-        
-        self.data_file = open(data_file, "wb")
-        self.bytes_to_read = bytes_to_read
-        unpack_sequence = str(int(self.bytes_to_read/2))                                                                # Divide by 2 because each sample is 2 bytes
-        self.unpack_format = "<" + unpack_sequence + "h"                                                                # Format for unpacking binary data ('h' -> short integer, '<' -> little endian, 'unpack_sequence' -> number of samples)
+class DataReceiverThread(QThread):
+    data_ready = pyqtSignal(list)
 
-        self.usb = interface_functions.usb_singleton(usb_port, 50000000)                                                # Configures the USB connection
-        self.usb.connect()                                                                                              # Connect the USB port
-        
+    def __init__(self, usb_port, num_channels, bytes_to_read, sampling_freq, is_recording_mode, save_queue=None):
+        super().__init__()
+        self.usb = interface_functions.usb_singleton(usb_port, 50000000)
+        self.num_channels = num_channels
+        self.bytes_to_read = bytes_to_read
+        self.running = False
+        self.sampling_freq = sampling_freq
+        self.is_recording_mode = is_recording_mode
+        self.save_queue = save_queue
+        unpack_sequence = str(self.bytes_to_read // 2)
+        self.unpack_format = "<" + unpack_sequence + "h"
+
     def run(self):
-        self.usb.clear_buffer()                                                                                         # Clean the buffer
-        self.usb.request_acquisition()                                                                                  # Command to starts the data acquisition (send to Arduino)
+        self.running = True
+        self.usb.connect()
+        self.usb.clear_buffer()
+        self.usb.request_acquisition()
 
         while self.running:
-            # Read data from the USB serial port
             if self.usb.port.in_waiting >= self.bytes_to_read:
-                mutex.lock()                                                                                            # Lock the mutex to avoid data corruption
-                #try:
-                byte_data = self.usb.port.read(self.bytes_to_read)
-                byte_data = bytearray(byte_data)                                                                        # Transforms binary data in byte array
-                integer_data = struct.unpack(self.unpack_format, byte_data)                                             # Transforms binary data in integer with the string in format "self.unpack_format" (two's complement little edian)
-
-                for i in range(self.num_channels):
-                    self.data_buffers[i].extend(integer_data[i::self.num_channels])                                     # Add data to the correct channel
-                
-                if self.is_recording_mode:
-                    # Save data to file
-                    self.data_file.write(byte_data)
-                mutex.unlock()                                                                                          # Unlock the mutex                                                
+                try:
+                    byte_data = self.usb.port.read(self.bytes_to_read)
+                    integer_data = struct.unpack(self.unpack_format, byte_data)
+                    channel_data = [integer_data[i::self.num_channels] for i in range(self.num_channels)]
+                    self.data_ready.emit(channel_data)
+                    if self.is_recording_mode and self.save_queue:
+                        self.save_queue.put(byte_data)
+                except Exception as e:
+                    print(f"Erro na aquisição: {e}")
+        self.usb.stop_acquisition()
+        self.usb.disconnect()
 
     def stop(self):
         self.running = False
-        self.usb.stop_acquisition()                                                                                     # Stops the acquisition in Arduino
-        self.usb.disconnect()                                                                                           # Disconnect the USB port
 
-class PlotUpdater(QRunnable):
-    def __init__(self, data_buffers, curves, channel_numbers):
+class SaveThread(QThread):
+    def __init__(self, filename, save_queue):
         super().__init__()
-        self.data_buffers = data_buffers
-        self.num_channels = len(data_buffers)
-        self.curves = curves
-        self.channel_numbers = channel_numbers
+        self.save_queue = save_queue
+        self.filename = filename
+        self.running = True
 
     def run(self):
-        for i in range(self.num_channels):
-            micro_volts_data = 1000*(0.195e-6)*numpy.array(self.data_buffers[i])                                        # Transforms data to Volts (0.195*1e-6 -> datasheet) and adds a scale factor to plot (100 -> arbitrary)
-            micro_volts_data = micro_volts_data + self.channel_numbers[i]  
+        with open(self.filename, 'wb') as f:
+            while self.running or not self.save_queue.empty():
+                try:
+                    data = self.save_queue.get(timeout=0.1)
+                    f.write(data)
+                except queue.Empty:
+                    continue
 
-            self.curves[i].setData(micro_volts_data)
+    def stop(self):
+        self.running = False
 
 #%% INTERFACE CLASS
 
@@ -202,6 +202,8 @@ class interface_visual_gui(QMainWindow):
         self.plot_viewer_function()                                                                             # Calls the plot viewer function
         self.showMaximized()                                                                                    # Maximizes the interface window
         self.show()                                                                                             # Shows the interface to the user
+
+        self.intan_scale = 1000 * 0.195e-6
 
         # INTERFACE INTERACTIONS
         # Record configuration interactions
@@ -593,8 +595,11 @@ class interface_visual_gui(QMainWindow):
             return                                                                                              # The program do nothing
     
     def start_threads(self, plot_real_time = True):        
-        self.curves = []
+        if hasattr(self, 'curves') and len(self.curves) > 0:
+            for curve in self.curves:
+                self.plot_viewer.removeItem(curve)
         
+        self.curves = []
         for _ in range(self.options.number_channels):
             pen = pyqtgraph.mkPen(color = 'white', width = 1)
             curve = self.plot_viewer.plot(pen = pen)
@@ -603,13 +608,27 @@ class interface_visual_gui(QMainWindow):
         bytes_per_read = 100
         self.bytes_to_read = int(bytes_per_read*2*self.options.number_channels)                                         # Number of bytes to be read at a time (in this case, at a time will be read 1 sample = 2 bytes per channel)          
         self.buffer_length = 2*self.options.sampling_frequency                                                          # Buffer length to store 1 second of record
-        self.data_buffers = [collections.deque(maxlen=self.buffer_length) for _ in range(self.options.number_channels)] # Circular buffer for each channel
+        self.scroll_index = 0
+        self.window_size = 500
+        self.plot_data_arrays = [numpy.zeros(self.window_size, dtype=numpy.float32) for _ in range(self.options.number_channels)]
         self.unpack_format = "<" + str(self.buffer_length/2) + "h"
 
         # Start the data receiver in the thread pool
-        self.data_receiver = DataReceiver(self.data_buffers, self.options.is_recording_mode,
-                                          self.options.save_directory, self.bytes_to_read, self.options.usb_port)
-        self.thread_pool.start(self.data_receiver)
+        self.save_queue = queue.Queue()
+        self.data_receiver_thread = DataReceiverThread(
+            usb_port=self.options.usb_port,
+            num_channels=self.options.number_channels,
+            bytes_to_read=self.bytes_to_read,
+            sampling_freq=self.options.sampling_frequency,
+            is_recording_mode=self.options.is_recording_mode,
+            save_queue=self.save_queue
+        )
+        self.data_receiver_thread.data_ready.connect(self.update_buffers)
+        self.data_receiver_thread.start()
+
+        if self.options.is_recording_mode:
+            self.save_thread = SaveThread(self.options.save_directory, self.save_queue)
+            self.save_thread.start()
 
         if not plot_real_time:
             record_time = self.options.get_total_time()
@@ -626,15 +645,20 @@ class interface_visual_gui(QMainWindow):
             self.plot_timer.start(update_interval)
 
     def stop_threads(self):
-        # Stop data receiver and plot updater
-        if self.data_receiver:
-            self.data_receiver.stop()
-            self.data_receiver = None
+        if hasattr(self, 'data_receiver_thread') and self.data_receiver_thread:
+            self.data_receiver_thread.stop()
+            self.data_receiver_thread.wait()
+            self.data_receiver_thread = None
 
-        # Stop the timer
+        if hasattr(self, 'save_thread') and self.options.is_recording_mode and self.save_thread:
+            self.save_thread.stop()
+            self.save_thread.wait()
+            self.save_thread = None
+
         self.plot_timer.stop()
-        self.plot_viewer.clear()
-        
+        for curve in self.curves:
+            curve.setData([])
+
         try:
             self.timer_updater.clear()
             self.timer_updater_timer.stop()
@@ -645,7 +669,6 @@ class interface_visual_gui(QMainWindow):
             self.record_timer.stop()
         except:
             print("Record timer not started")
-            pass
 
     def request_timer_update(self):
         total_time = self.options.get_total_time()
@@ -663,12 +686,30 @@ class interface_visual_gui(QMainWindow):
         self.progress_bar.setValue(value)
 
     def request_plot_update(self):
-        # Use the thread pool to handle the plot update task
-        self.plot_updater = PlotUpdater(self.data_buffers, self.curves, self.options.channels)
-        self.thread_pool.start(self.plot_updater)
+        for i in range(self.options.number_channels):
+            self.curves[i].setData(self.plot_data_arrays[i], copy=False)
+            self.curves[i].setPos(self.scroll_index - self.window_size, 0)
+
+        self.plot_viewer.setXRange(self.scroll_index - self.window_size, self.scroll_index)
 
 #%% RECORDING MODE FUNCTIONS
-    
+    def update_buffers(self, channel_data):
+        for i in range(self.options.number_channels):
+            n = len(channel_data[i])
+            new_data = numpy.empty(n, dtype=numpy.float32)
+            numpy.multiply(channel_data[i], self.intan_scale, out=new_data)
+            numpy.add(new_data, self.options.channels[i], out=new_data)
+
+            # Atualiza buffer circular de plot
+            self.plot_data_arrays[i][:-n] = self.plot_data_arrays[i][n:]
+            self.plot_data_arrays[i][-n:] = new_data
+
+        self.scroll_index += len(channel_data[0])
+        if self.scroll_index > 10000:
+            self.scroll_index = 0
+
+        self.request_plot_update()
+
     def start_recording_mode_function(self):
         self.stop_threads()
 

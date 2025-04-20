@@ -100,12 +100,14 @@ class intan_rhd_chip_class
     uint16_t lowpass_frequency = 0.1;                                 // Default low pass filter cutoff frequency           
     uint32_t channels = 0xFFFFFFFF;                                   // Channels to be recorded [32, 31 ... 2, 1] (0 = off and 1 = on)
     uint16_t channel_sequence[32];                                    // Sequence of channels to be sent to INTAN
+    uint16_t real_channel[32];                                        // INTAN convert the channel 2 CS after the request, so the real channel are the channel_sequence rolled by 2;
     uint16_t channel_count = 0;                                       // Variable to count the number off channels
     
+    int signal = 1;                                                   // Variable to invert the signal for the next channel
     int serial_pinout = 9;                                            // Output pin for chip selection
     int sync_pinout = 13;                                             // Output pin for syncronization trigger
     uint16_t buffer[32 + 1];                                          // Buffer to store data from a single run of all channels (only up to 32 channels at once)
-    uint32_t packages_received = 0;                                   // Count total number of packages with channel DATA received from INTAN
+    uint8_t packages_received = 0;                                    // Count total number of packages with channel DATA received from INTAN
     
     bool usb_serial_flag = true;                                      // USB connection flag
 
@@ -119,6 +121,7 @@ class intan_rhd_chip_class
       
     void convert_channels();                                          // Declares function that sends to RHD chip all converts commands
      
+    bool first_sample = true;                                          // Declares variable that indicates if it's the first sample of the run
     uint16_t write(uint16_t register_number, uint8_t data);           // Declares function that writes to RHD chip registers
     uint16_t read(uint16_t register_number);                          // Declares function that reads to RHD chip registers 
     uint16_t clear();                                                 // Declares function that clears the RHD chip configurations
@@ -207,8 +210,14 @@ uint16_t intan_rhd_chip_class::transfer_data(uint16_t data)
 void intan_rhd_chip_class::convert_channels()
 {  
   // First 16 bits of the buffer are used as a header (0xFE00) to identify the package
-  buffer[0] = 0xFEFE; // Header of the package
+  buffer[0] = packages_received << 8 | 0xFE; // Header of the package (is inverted due to MSB logic, the MicroMAP will read 0xFEXX)
   int channel_actual = 0;
+
+  if (first_sample) // If it's the first sample, set the first channel to 0
+  {
+    
+  }
+
   while (channel_actual < channel_count)
   {  
     digital_write_direct(serial_pinout, LOW);  
@@ -228,11 +237,11 @@ void intan_rhd_chip_class::convert_channels()
     asm volatile("nop"::);asm volatile("nop"::);
     asm volatile("nop"::);asm volatile("nop"::);
     
-    if (dataWriteIntanOrTest) REG_SPI0_TDR = channel_sequence[channel_actual]; 
-    else REG_SPI0_TDR = 0xFE00;
+    if (dataWriteIntanOrTest) REG_SPI0_TDR = channel_sequence[channel_actual];                // If dataWriteIntanOrTest is true, send the command to INTAN chip
+    else REG_SPI0_TDR = 0xFE00;                                                               // Else, send the command to INTAN chip (for testing purposes)
     while ((REG_SPI0_SR & SPI_SR_TXEMPTY) == 0) {}  
-    if (dataReadIntanOrTest) buffer[channel_actual + 1] = REG_SPI0_RDR & 0xFFFF;
-    else buffer[channel_actual + 1] = channel_sequence[channel_actual];
+    if (dataReadIntanOrTest) buffer[(real_channel[channel_actual] >> 8) + 1] = REG_SPI0_RDR & 0xFFFF;             // If dataReadIntanOrTest is true, read the data from INTAN chip
+    else buffer[channel_actual + 1] = signal * channel_sequence[channel_actual];                                // Else, save the channel number in the buffer (for testing purposes)
     
     asm volatile("nop"::);asm volatile("nop"::);
     asm volatile("nop"::);asm volatile("nop"::);
@@ -267,6 +276,8 @@ void intan_rhd_chip_class::convert_channels()
     asm volatile("nop"::);asm volatile("nop"::);
     channel_actual++;
   }
+
+  if (!dataReadIntanOrTest) signal = signal*-1; // Inverts the signal for the next channel
   packages_received++;
   transfer_data_flag = true;
 }
@@ -459,6 +470,17 @@ void intan_rhd_chip_class::build_channel_sequence(uint32_t p_channels)
       channel_count++;                                            // Adds the counting
     } 
 
+  // Roll by two the channel sequence to match the INTAN RHD chip sequence and save the sequence in the real_channel array
+  if (channel_count >= 3) {
+    for (uint16_t i = 0; i < channel_count; i++) {
+      real_channel[i] = channel_sequence[(i + channel_count - 2) % channel_count];
+    }
+  } else {
+    for (uint16_t i = 0; i < channel_count; i++) {
+      real_channel[i] = channel_sequence[i];
+    }
+  }
+
   uint16_t buffer[channel_count + 1];
 }
 
@@ -576,6 +598,7 @@ void intan_rhd_chip_class::treat_command(byte *command_buffer)
         start_acquisition(sampling_frequency);              // Starts the data acquisition
         command_buffer[3] = 'K';                            // Sets the byte to answer to interface the ascii ("OK")
         command_buffer[2] = 'O';                            // Sets the byte to answer to interface the ascii ("OK")
+        first_sample = true;                                // Sets the first sample to true (to start the acquisition)
         break;
 
     /*  STOPS ACQUISITION COMMAND
@@ -681,9 +704,10 @@ void intan_rhd_chip_class::treat_command(byte *command_buffer)
       write(0x000E, 0xAA);                                  // Sends the write command to change the Register 14 (turns on/off some bioamplifiers)
       break;
 
-     
+    // This command tests the READ function. If the command is 0xE5, it sends for each CS pulse the value of the channel
+    // that is being read. If the command is 0xE6, it sends for each CS pulse the value of the channel that is being written.
     case 0xE5:                                              // This command changes the DATA READ TEST FUNCION 
-      if (command_buffer[3] == 1) 
+      if (command_buffer[3] == 1)   
         dataReadIntanOrTest = true;
       else dataReadIntanOrTest = false; 
       break;

@@ -10,7 +10,7 @@ void setup()
 {
   SerialUSB.begin(50000000);                                                                      // Starts the high speed USB transfer port (50MB)
   USART0config(8); 
-  intan_rhd_chip.init_default(7, 13, 0xFFFFFFFF, 2000, 16, 1);                                    // Starts the SPI bus and configures INTAN RHD
+  intan_rhd_chip.init_default(9, 13, 0xFFFFFFFF, 2000, 16, 1);                                    // Starts the SPI bus and configures INTAN RHD
 }
 
 /*  COMMUNICATION LOOP

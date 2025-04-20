@@ -71,13 +71,8 @@ class acquisition:
         self.sampling_frequency = 2000                                           # Desired sampling frequency
         self.highpass = 0.1                                                      # Desired highpass filter frequency
         self.lowpass = 20000                                                     # Desired lowpass filter frequency
-        self.days = 0                                                            # Desired day of data acquisition
-        self.hours = 1                                                           # Desired hours of data acquisition
-        self.minutes = 0                                                         # Desired minutes of data acquisition
-        self.seconds = 0                                                         # Desired seconds of data acquisition
-        self.total_time = 3600                                                   # Total acquisition time in seconds
         self.channels = [1]*16                                                   # Channels that will be sampled in a boolean list
-        self.number_channels = 16                                                # Number of channels selected
+        self.num_channels = 16                                                # Number of channels selected
         self.channels_bool = 'ffff'                                              # Bool list of the channels
         self.usb_port = "None"                                                   # USB port connection
         self.save_directory = "None"                                             # Directory to save the data
@@ -155,18 +150,8 @@ class acquisition:
         channels = array(channels_bool)                                            # Turns a list in an array
         self.channels = where(channels == 1)[0]                                    # Gets only the indexes that will be registered 
         self.channels = [x + 1 for x in self.channels]                             # Sets the attribute adding 1 in all elements of a list to eliminate the index 0
-        self.number_channels = sum(channels_bool)                                  # Gets the number of channels selected    
+        self.num_channels = sum(channels_bool)                                     # Gets the number of channels selected    
        
-    def get_total_time(self):
-        '''Get total time
-        
-        This public function outputs to the client class the total time of record in seconds.
-        
-        '''
-        self.total_time = self.days*24*60*60 + self.hours*60*60 + \
-                            self.minutes*60 + self.seconds                         # Calculates the total time in seconds
-        return self.total_time                                                     # Returns the attribute with the correspondent number
-
     def resume_options(self):
         self._resume = {}
         self._resume["Method"] = self.method                                                # Updates the Method in the "resume"
@@ -174,10 +159,7 @@ class acquisition:
         self._resume["Sampling Frequency"] = self.sampling_frequency                        # Updates the Sampling Frequency in the "resume"
         self._resume["High Pass Filter"] = self.highpass                                    # Updates the High Pass Filter in the "resume"
         self._resume["Low Pass Filter"] = self.lowpass                                      # Updates the Low Pass Filter in the "resume"
-        self._resume["Duration"] = str(self.days) + ':' + str(self.hours) + ':' +  \
-                                   str(self.minutes) + ':' +  str(self.seconds)             # Updates the Duration in the "resume"
-        self._resume["Total Time"] = self.get_total_time()                                  # Updates the Total Time in the "resume"
-        self._resume["Number of Channels"] = self.number_channels                           # Updates the Number of Channels in the "resume"
+        self._resume["Number of Channels"] = self.num_channels                              # Updates the Number of Channels in the "resume"
         self._resume["Channels (Boolean)"] = str(self.channels_bool.hex())                  # Updates the Channels (Boolean) in the "resume"
         self._resume["Channels"] = self.channels                                            # Updates the Channels in the "resume"
         self._resume["USB Port"] = self.usb_port                                            # Updates the USB Port in the "resume"

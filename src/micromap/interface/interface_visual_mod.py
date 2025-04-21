@@ -55,8 +55,8 @@ import platform
 from pyqtgraph.Qt import QtGui
 from pyqtgraph import mkPen
 import pyqtgraph
-# pyqtgraph.setConfigOptions(useOpenGL=True)
-pyqtgraph.setConfigOptions(antialias=False)
+# pyqtgraph.setConfigOptions(useOpenGL = True)
+pyqtgraph.setConfigOptions(antialias = False)
 
 class DataReceiverThread(QThread):
     raw_data_ready = pyqtSignal(bytearray)
@@ -230,10 +230,10 @@ class interface_visual_gui(QMainWindow):
         self.plot_online = True                                                                                  # Variable to check if the plot is online or offline
         
         if self.is_raspberry:
-            self.plot_window_sec = 2                                                                                # Number of seconds to be plotted (X axis limit)
+            self.plot_window_sec = 1                                                                                # Number of seconds to be plotted (X axis limit)
             self.seconds_to_read = 0.05                                                                             # Number of seconds to be read at time (number of consecutive samples to be read)
             # If update_samples = 100 and samples_to_read_sec = 0.05, then the number of packets to be plotted at time is 100*0.05 = 5 seconds
-            self.update_samples = 100                                                                               # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
+            self.update_samples = 20                                                                               # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
         else:
             self.plot_window_sec = 5                                                                                 # Number of seconds to be plotted (X axis limit)
             self.seconds_to_read = 0.05                                                                              # Number of seconds to be read at time (number of consecutive samples to be read)
@@ -241,7 +241,7 @@ class interface_visual_gui(QMainWindow):
             self.update_samples = 2                                                                                 # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
 
         self.plot_window = self.plot_window_sec * self.options.sampling_frequency
-        if self.update_samples > self.plot_window:
+        if self.update_samples*self.seconds_to_read > self.plot_window_sec:
             raise ValueError("Update rate must be greater than or equal to samples to read.")
 
         self.plot_viewer_function()                                                                             # Calls the plot viewer function
@@ -630,8 +630,10 @@ class interface_visual_gui(QMainWindow):
             pen = pyqtgraph.mkPen('white', width=1)
             curve = self.plot_viewer.plot(self.x_values, self.plot_data_arrays[i], pen=pen)
             if self.is_raspberry:
-                curve.setDownsampling(auto=False, ds=4, method='peak')  # Downsample the curve to reduce the number of points plotted
+                ds = math.ceil(self.options.sampling_frequency/200)
+                curve.setDownsampling(auto=False, ds=ds, method='peak')  # Downsample the curve to reduce the number of points plotted
                 curve.setClipToView(True)
+                curve.setSkipFiniteCheck(True)
             # curve.setDownsampling(auto=False, ds=10, method='peak')  # Downsample the curve to reduce the number of points plotted
             self.curves.append(curve)
 

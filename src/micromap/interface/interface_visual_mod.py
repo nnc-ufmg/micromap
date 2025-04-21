@@ -226,10 +226,6 @@ class interface_visual_gui(QMainWindow):
         # This dictionary is the output variable of the interface to start the record
         self.options = interface_functions.acquisition()
 
-        self.plot_viewer_function()                                                                             # Calls the plot viewer function
-        self.showMaximized()                                                                                    # Maximizes the interface window
-        self.show()                                                                                             # Shows the interface to the user
-
         self.ads_scale = 0
         self.plot_online = True                                                                                  # Variable to check if the plot is online or offline
         
@@ -244,8 +240,14 @@ class interface_visual_gui(QMainWindow):
             # If update_samples = 100 and samples_to_read_sec = 0.05, then the number of packets to be plotted at time is 100*0.05 = 5 seconds
             self.update_samples = 10                                                                                 # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
 
+        self.plot_window = self.plot_window_sec * self.options.sampling_frequency
         if self.update_samples > self.plot_window:
             raise ValueError("Update rate must be greater than or equal to samples to read.")
+
+        self.plot_viewer_function()                                                                             # Calls the plot viewer function
+        self.showMaximized()                                                                                    # Maximizes the interface window
+        self.show()                                                                                             # Shows the interface to the user
+
 
         self.timer_updater_timer = QTimer()
         self.timer_updater_timer.timeout.connect(self.update_experiment_timer)

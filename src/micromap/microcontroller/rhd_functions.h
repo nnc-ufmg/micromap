@@ -240,7 +240,7 @@ void intan_rhd_chip_class::convert_channels()
     if (dataWriteIntanOrTest) REG_SPI0_TDR = channel_sequence[channel_actual];                // If dataWriteIntanOrTest is true, send the command to INTAN chip
     else REG_SPI0_TDR = 0xFE00;                                                               // Else, send the command to INTAN chip (for testing purposes)
     while ((REG_SPI0_SR & SPI_SR_TXEMPTY) == 0) {}  
-    if (dataReadIntanOrTest) buffer[(real_channel[channel_actual] >> 8) + 1] = REG_SPI0_RDR & 0xFFFF;             // If dataReadIntanOrTest is true, read the data from INTAN chip
+    if (dataReadIntanOrTest) buffer[(real_channel[channel_actual]) + 1] = REG_SPI0_RDR & 0xFFFF;           // If dataReadIntanOrTest is true, read the data from INTAN chip
     else buffer[channel_actual + 1] = signal * channel_sequence[channel_actual];                                // Else, save the channel number in the buffer (for testing purposes)
     
     asm volatile("nop"::);asm volatile("nop"::);
@@ -473,11 +473,11 @@ void intan_rhd_chip_class::build_channel_sequence(uint32_t p_channels)
   // Roll by two the channel sequence to match the INTAN RHD chip sequence and save the sequence in the real_channel array
   if (channel_count >= 3) {
     for (uint16_t i = 0; i < channel_count; i++) {
-      real_channel[i] = channel_sequence[(i + channel_count - 2) % channel_count];
+      real_channel[i] = (i + channel_count - 2) % channel_count;
     }
   } else {
     for (uint16_t i = 0; i < channel_count; i++) {
-      real_channel[i] = channel_sequence[i];
+      real_channel[i] = i;
     }
   }
 

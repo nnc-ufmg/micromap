@@ -56,6 +56,7 @@ from pyqtgraph.Qt import QtGui
 from pyqtgraph import mkPen
 import pyqtgraph
 # pyqtgraph.setConfigOptions(useOpenGL=True)
+pyqtgraph.setConfigOptions(antialias=False)
 
 class DataReceiverThread(QThread):
     raw_data_ready = pyqtSignal(bytearray)
@@ -129,7 +130,7 @@ class PlotThread(QThread):
     def run(self):
         while self.running:
             try:
-                byte_data = self.queue.get(timeout=0.2)
+                byte_data = self.queue.get(timeout=0.1)
 
                 clean_bytes = []
                 for i, b in enumerate(byte_data):
@@ -143,8 +144,7 @@ class PlotThread(QThread):
                 values = struct.unpack(self.unpack_format, clean_bytes)
                 channel_data = numpy.array([values[i::self.num_channels] for i in range(self.num_channels)], dtype=numpy.float32)
 
-                for i in range(self.num_channels):
-                    channel_data[i, :] = channel_data[i, :] * self.intan_scale + i
+                channel_data = channel_data * self.intan_scale
 
                 update_length = channel_data.shape[1]
                 end_index = self.update_index + update_length
@@ -622,7 +622,7 @@ class interface_visual_gui(QMainWindow):
             raise ValueError("samples_to_read must be less than or equal to plot_window")
         
         self.write_index = 0
-        self.plot_data_arrays = [numpy.zeros(self.plot_window, dtype=numpy.float32) + i + 1 for i in range(self.options.num_channels)]
+        self.plot_data_arrays = [numpy.zeros(self.plot_window, dtype=numpy.float32) + self.options.channels[i] for i in range(self.options.num_channels)]
 
         self.x_values = numpy.arange(self.plot_window)
         self.curves = []
@@ -631,6 +631,7 @@ class interface_visual_gui(QMainWindow):
             curve = self.plot_viewer.plot(self.x_values, self.plot_data_arrays[i], pen=pen)
             if self.is_raspberry:
                 curve.setDownsampling(auto=False, ds=4, method='peak')  # Downsample the curve to reduce the number of points plotted
+                curve.setClipToView(True)
             # curve.setDownsampling(auto=False, ds=10, method='peak')  # Downsample the curve to reduce the number of points plotted
             self.curves.append(curve)
 
@@ -699,15 +700,16 @@ class interface_visual_gui(QMainWindow):
             end = self.write_index + channel_data.shape[1]
             
             for i in range(self.options.num_channels):
+                data = channel_data[i] + self.options.channels[i]
                 if end <= self.plot_window:
-                    self.plot_data_arrays[i][self.write_index:end] = channel_data[i]
+                    self.plot_data_arrays[i][self.write_index:end] = data
                 else:
                     # Parte final + parte inicial
                     overflow = end - self.plot_window
-                    self.plot_data_arrays[i][self.write_index:] = channel_data[i][:-overflow]
-                    self.plot_data_arrays[i][:overflow] = channel_data[i][-overflow:]
+                    self.plot_data_arrays[i][self.write_index:] = data[:-overflow]
+                    self.plot_data_arrays[i][:overflow] = data[-overflow:]
                 
-                self.curves[i].setData(x=self.x_values, y=self.plot_data_arrays[i], copy=False)
+                self.curves[i].setData(x = self.x_values, y = self.plot_data_arrays[i], copy=False)
 
             if overflow is not None:
                 self.write_index = overflow

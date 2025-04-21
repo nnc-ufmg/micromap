@@ -225,7 +225,6 @@ class interface_visual_gui(QMainWindow):
         # INTERFCE DEFAULT OPTIONS
         # This dictionary is the output variable of the interface to start the record
         self.options = interface_functions.acquisition()
-        self.plot_window = 5 * self.options.sampling_frequency                                                          # Number of samples to be plotted at a time (in this case, 5 seconds of samples will be plotted)
 
         self.plot_viewer_function()                                                                             # Calls the plot viewer function
         self.showMaximized()                                                                                    # Maximizes the interface window
@@ -235,8 +234,8 @@ class interface_visual_gui(QMainWindow):
         self.plot_online = True                                                                                  # Variable to check if the plot is online or offline
         
         if self.is_raspberry:
-            self.plot_window_sec = 2                                                                                 # Number of seconds to be plotted (X axis limit)
-            self.seconds_to_read = 0.01                                                                             # Number of seconds to be read at time (number of consecutive samples to be read)
+            self.plot_window_sec = 5                                                                                # Number of seconds to be plotted (X axis limit)
+            self.seconds_to_read = 0.05                                                                             # Number of seconds to be read at time (number of consecutive samples to be read)
             # If update_samples = 100 and samples_to_read_sec = 0.05, then the number of packets to be plotted at time is 100*0.05 = 5 seconds
             self.update_samples = 100                                                                               # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
         else:

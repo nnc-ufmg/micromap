@@ -129,7 +129,7 @@ class PlotThread(QThread):
     def run(self):
         while self.running:
             try:
-                byte_data = self.queue.get(timeout=0.1)
+                byte_data = self.queue.get(timeout=0.2)
 
                 clean_bytes = []
                 for i, b in enumerate(byte_data):
@@ -216,7 +216,7 @@ class interface_visual_gui(QMainWindow):
             self.interface = uic.loadUi(os.path.dirname(__file__) + "\\interface_gui.ui", self)                     # Loads the interface design archive (made in Qt Designer)
 
         self.is_raspberry = ("arm" in platform.machine() or "aarch" in platform.machine()) and "raspbian" in platform.platform().lower()
-        self.is_raspberry = True
+        # self.is_raspberry = True
 
         # Variables for threads
         self.data_receiver = None
@@ -238,7 +238,7 @@ class interface_visual_gui(QMainWindow):
             self.plot_window_sec = 5                                                                                 # Number of seconds to be plotted (X axis limit)
             self.seconds_to_read = 0.05                                                                              # Number of seconds to be read at time (number of consecutive samples to be read)
             # If update_samples = 100 and samples_to_read_sec = 0.05, then the number of packets to be plotted at time is 100*0.05 = 5 seconds
-            self.update_samples = 10                                                                                 # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
+            self.update_samples = 2                                                                                 # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
 
         self.plot_window = self.plot_window_sec * self.options.sampling_frequency
         if self.update_samples > self.plot_window:
@@ -247,7 +247,6 @@ class interface_visual_gui(QMainWindow):
         self.plot_viewer_function()                                                                             # Calls the plot viewer function
         self.showMaximized()                                                                                    # Maximizes the interface window
         self.show()                                                                                             # Shows the interface to the user
-
 
         self.timer_updater_timer = QTimer()
         self.timer_updater_timer.timeout.connect(self.update_experiment_timer)
@@ -623,7 +622,7 @@ class interface_visual_gui(QMainWindow):
             raise ValueError("samples_to_read must be less than or equal to plot_window")
         
         self.write_index = 0
-        self.plot_data_arrays = [numpy.zeros(self.plot_window, dtype=numpy.float32) for _ in range(self.options.num_channels)]
+        self.plot_data_arrays = [numpy.zeros(self.plot_window, dtype=numpy.float32) + i + 1 for i in range(self.options.num_channels)]
 
         self.x_values = numpy.arange(self.plot_window)
         self.curves = []
@@ -631,7 +630,7 @@ class interface_visual_gui(QMainWindow):
             pen = pyqtgraph.mkPen('white', width=1)
             curve = self.plot_viewer.plot(self.x_values, self.plot_data_arrays[i], pen=pen)
             if self.is_raspberry:
-                curve.setDownsampling(auto=False, ds=10, method='peak')  # Downsample the curve to reduce the number of points plotted
+                curve.setDownsampling(auto=False, ds=4, method='peak')  # Downsample the curve to reduce the number of points plotted
             # curve.setDownsampling(auto=False, ds=10, method='peak')  # Downsample the curve to reduce the number of points plotted
             self.curves.append(curve)
 
@@ -881,17 +880,18 @@ class interface_visual_gui(QMainWindow):
     def stop_function(self): 
         self.stop_threads()                                                                                     # Calls the function to stop the threads
         
-        self.options.is_recording_mode = False                                                                  # Changes the recording mode flag to 'false'
-        
         record_time = time.perf_counter() - self.initial_time                                                   # Gets the time of the recording
         text = str('Data acquisition completed successfully \n\n' +
                    'Duration: {}\n'.format(timedelta(seconds = round(record_time))))                            # Text to be showed in warning message
         self.warning_message_function(text)                                                                     # Shows a warning message
         
-        options_resume = self.options.resume_options()                                                          # Gets the data resume
-        options_resume_file = self.options.save_directory[:-5] + '_metadata.pkl'                                # Creates the file name to write the resume
-        with open(options_resume_file, 'wb') as file:                                                           # Opens the file to write the resume
-            pickle.dump(options_resume, file)                                                                   # Writes the resume in the file
+        if self.options.is_recording_mode:                                                                    # If the recording mode is active
+            options_resume = self.options.resume_options()                                                          # Gets the data resume
+            options_resume_file = self.options.save_directory[:-5] + '_metadata.pkl'                                # Creates the file name to write the resume
+            with open(options_resume_file, 'wb') as file:                                                           # Opens the file to write the resume
+                pickle.dump(options_resume, file)                                                                   # Writes the resume in the file
+
+        self.options.is_recording_mode = False                                                                  # Changes the recording mode flag to 'false'
 
         self.options.save_directory = "None"                                                                    # Change the save directory on main variables dictionary
 

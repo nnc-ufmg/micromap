@@ -182,6 +182,7 @@ class SaveThread(QThread):
                 try:
                     data = self.save_queue.get(timeout=0.1)
                     f.write(data)
+                    f.flush()
                 except queue.Empty:
                     continue
 

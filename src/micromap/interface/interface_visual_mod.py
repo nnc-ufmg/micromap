@@ -234,10 +234,10 @@ class interface_visual_gui(QMainWindow):
         self.plot_online = True                                                                                  # Variable to check if the plot is online or offline
         
         if is_raspberry:
-            self.plot_window_sec = 5                                                                                 # Number of seconds to be plotted (X axis limit)
-            self.seconds_to_read = 1/2000                                                                            # Number of seconds to be read at time (number of consecutive samples to be read)
+            self.plot_window_sec = 2                                                                                 # Number of seconds to be plotted (X axis limit)
+            self.seconds_to_read = 0.01                                                                             # Number of seconds to be read at time (number of consecutive samples to be read)
             # If update_samples = 100 and samples_to_read_sec = 0.05, then the number of packets to be plotted at time is 100*0.05 = 5 seconds
-            self.update_samples = 2000                                                                               # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
+            self.update_samples = 100                                                                               # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
         else:
             self.plot_window_sec = 5                                                                                 # Number of seconds to be plotted (X axis limit)
             self.seconds_to_read = 0.05                                                                              # Number of seconds to be read at time (number of consecutive samples to be read)
@@ -628,6 +628,9 @@ class interface_visual_gui(QMainWindow):
         for i in range(self.options.num_channels):
             pen = pyqtgraph.mkPen('white', width=1)
             curve = self.plot_viewer.plot(self.x_values, self.plot_data_arrays[i], pen=pen)
+            if self.is_raspberry_pi:
+                curve.setDownsample(auto=False, ds=10, mode='peak')  # Downsample the curve to reduce the number of points plotted
+            # curve.setDownsampling(auto=False, ds=10, method='peak')  # Downsample the curve to reduce the number of points plotted
             self.curves.append(curve)
 
         self.plot_thread = PlotThread(
@@ -983,6 +986,8 @@ class interface_visual_gui(QMainWindow):
         y_ticks.setTextPen('#969696')
         x_ticks.setStyle(tickTextOffset=10)
         y_ticks.setStyle(tickTextOffset=10)
+
+
 
 # INITIALIZANTION FUNCTION
 

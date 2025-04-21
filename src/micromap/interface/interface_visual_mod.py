@@ -216,7 +216,7 @@ class interface_visual_gui(QMainWindow):
             self.interface = uic.loadUi(os.path.dirname(__file__) + "\\interface_gui.ui", self)                     # Loads the interface design archive (made in Qt Designer)
 
         self.is_raspberry = ("arm" in platform.machine() or "aarch" in platform.machine()) and "raspbian" in platform.platform().lower()
-        # self.is_raspberry = True
+        self.is_raspberry = True
 
         # Variables for threads
         self.data_receiver = None
@@ -230,7 +230,7 @@ class interface_visual_gui(QMainWindow):
         self.plot_online = True                                                                                  # Variable to check if the plot is online or offline
         
         if self.is_raspberry:
-            self.plot_window_sec = 5                                                                                # Number of seconds to be plotted (X axis limit)
+            self.plot_window_sec = 2                                                                                # Number of seconds to be plotted (X axis limit)
             self.seconds_to_read = 0.05                                                                             # Number of seconds to be read at time (number of consecutive samples to be read)
             # If update_samples = 100 and samples_to_read_sec = 0.05, then the number of packets to be plotted at time is 100*0.05 = 5 seconds
             self.update_samples = 100                                                                               # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
@@ -798,6 +798,9 @@ class interface_visual_gui(QMainWindow):
                   str(self.options.lowpass)                  +  
                   "Hz\nNumber of recorded channels: "        + 
                   str(self.options.num_channels)          + 
+                  "\nIs Raspberry: " + str(self.is_raspberry) +
+                  "\nUpdata samples: " + str(self.update_samples) +
+                  "\nRead time: " + str(self.seconds_to_read) +
                   "\n\nDo you wish to continue?")                                                               # Create the resume message
         answer = self.option_message_function(text, message)                                                    # Show a warning pop-up
         return answer

@@ -215,7 +215,8 @@ class interface_visual_gui(QMainWindow):
         elif platform.system() == 'Windows':
             self.interface = uic.loadUi(os.path.dirname(__file__) + "\\interface_gui.ui", self)                     # Loads the interface design archive (made in Qt Designer)
 
-        is_raspberry = ("arm" in platform.machine() or "aarch" in platform.machine()) and "raspbian" in platform.platform().lower()
+        self.is_raspberry = ("arm" in platform.machine() or "aarch" in platform.machine()) and "raspbian" in platform.platform().lower()
+        self.is_raspberry = True
 
         # Variables for threads
         self.data_receiver = None
@@ -233,7 +234,7 @@ class interface_visual_gui(QMainWindow):
         self.ads_scale = 0
         self.plot_online = True                                                                                  # Variable to check if the plot is online or offline
         
-        if is_raspberry:
+        if self.is_raspberry:
             self.plot_window_sec = 2                                                                                 # Number of seconds to be plotted (X axis limit)
             self.seconds_to_read = 0.01                                                                             # Number of seconds to be read at time (number of consecutive samples to be read)
             # If update_samples = 100 and samples_to_read_sec = 0.05, then the number of packets to be plotted at time is 100*0.05 = 5 seconds
@@ -628,8 +629,8 @@ class interface_visual_gui(QMainWindow):
         for i in range(self.options.num_channels):
             pen = pyqtgraph.mkPen('white', width=1)
             curve = self.plot_viewer.plot(self.x_values, self.plot_data_arrays[i], pen=pen)
-            if self.is_raspberry_pi:
-                curve.setDownsample(auto=False, ds=10, mode='peak')  # Downsample the curve to reduce the number of points plotted
+            if self.is_raspberry:
+                curve.setDownsampling(auto=False, ds=10, method='peak')  # Downsample the curve to reduce the number of points plotted
             # curve.setDownsampling(auto=False, ds=10, method='peak')  # Downsample the curve to reduce the number of points plotted
             self.curves.append(curve)
 

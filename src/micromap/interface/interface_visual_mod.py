@@ -322,7 +322,7 @@ class interface_visual_gui(QMainWindow):
         self.stop_button.clicked.connect(self.stop_function)                                                        # Called when stop button is clicked
         self.record_button.clicked.connect(self.start_view_mode_function)                                           # Called when the clear button is clicked 
         self.show_plot_checkbox.stateChanged.connect(self.show_plot_function)                                       # Called when the "show plot" checkbox is clicked
-        self.timeout_button.clicked.connect(self.timeout_function)                                                        # Called when the timeout button is clicked
+        self.set_timeout_button.clicked.connect(self.timeout_function)                                                        # Called when the timeout button is clicked
 
     # INTERFACE SELECTIONS FUNCTIONS ------------------------------------------------------------
             
@@ -746,7 +746,8 @@ class interface_visual_gui(QMainWindow):
             if self.timeout is not None:            
                 timout_ms = self.timeout * 1000  # Convert to milliseconds
                 self.timeout_timer.start(timout_ms)   # Start the timer to test the connection
-            
+                print(f"Timeout timer started with {timout_ms} ms")
+
             self.save_thread.start()
 
     def stop_threads(self):
@@ -853,6 +854,7 @@ class interface_visual_gui(QMainWindow):
             if value > 0:
                 self.timeout = value  # Set the timeout value
                 self.change_lineedit.setText('Timeout value set')  # Show success message in the line edit
+                print(f"Timeout value set to {self.timeout} seconds")
         except:
             self.change_lineedit.setText('Invalid timout value')  # Show error message in the line edit
 

@@ -2477,7 +2477,7 @@ p, li { white-space: pre-wrap; }
                  <string notr="true">QPushButton{border:2px solid #A21F27;border-radius:8px;background-color:#2C53A1;color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;}QPushButton:pressed{border:2px solid #A21F27;border-radius:8px;background-color:#A21F27;color:#FFFFFF;}QPushButton::!enabled{border:2px solid #969696;border-radius:8px;background-color:#606060;color:#FFFFFF;font:7pt&quot;DejaVu Sans&quot;;font-weight:bold;}</string>
                 </property>
                 <property name="text">
-                 <string notr="true">TIMEOUT</string>
+                 <string notr="true"> TIMEOUT </string>
                 </property>
                 <property name="checked">
                  <bool>false</bool>

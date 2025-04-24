@@ -28,8 +28,26 @@
 import matplotlib
 import serial
 import time
+import os
 matplotlib.use('Qt5Agg')
 from numpy import where, array
+
+def is_raspberry_pi():
+    try:
+        # 1. Verifica via /proc/cpuinfo
+        with open("/proc/cpuinfo", "r") as f:
+            if any("BCM" in line or "Raspberry" in line for line in f):
+                return True
+
+        # 2. Verifica via modelo do dispositivo
+        if os.path.exists("/sys/firmware/devicetree/base/model"):
+            model = open("/sys/firmware/devicetree/base/model").read().lower()
+            if "raspberry pi" in model:
+                return True
+
+        return False
+    except Exception:
+        return False
 
 class acquisition: 
     '''Acquisition

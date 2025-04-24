@@ -60,6 +60,7 @@ pyqtgraph.setConfigOptions(antialias = False)
 
 class DataReceiverThread(QThread):
     raw_data_ready = pyqtSignal(bytearray)
+    message = pyqtSignal(str)
 
     def __init__(self, usb_port, num_channels, samples_to_read, is_recording_mode, save_queue = None):
         super().__init__()
@@ -87,7 +88,6 @@ class DataReceiverThread(QThread):
                     self.buffer += partial_data
 
                     while len(self.buffer) >= self.bytes_to_read:                      
-                        print()
                         full_packet = self.buffer[:self.bytes_to_read]
                         self.buffer = self.buffer[self.bytes_to_read:]
 
@@ -96,7 +96,7 @@ class DataReceiverThread(QThread):
 
                         packet_counter = full_packet[1]  # Get the packet counter from the second byte
                         if packet_counter != self.expected_counter:
-                            print(f"[ERROR] Packet counter mismatch: expected {self.expected_counter}, got {packet_counter}")
+                            self.message.emit(f"[ERROR] Packet counter mismatch: expected {self.expected_counter}, got {packet_counter}")
 
                         self.expected_counter = (self.expected_counter + self.samples_to_read) % 256  # Increment the expected counter
 
@@ -104,11 +104,11 @@ class DataReceiverThread(QThread):
                             self.save_queue.put(full_packet)
 
                         self.raw_data_ready.emit(bytearray(full_packet))
-                        print(f'[RECEIVE] {self.read_number}')
+                        self.message.emit(f'[RECEIVE] {self.read_number}')
                         self.read_number += 1
 
                 except Exception as e:
-                    print(f"[ERROR]: {e}")
+                    self.message.emit(f"[ERROR]: {e}")
 
         self.usb.stop_acquisition()
         self.usb.disconnect()
@@ -118,6 +118,7 @@ class DataReceiverThread(QThread):
 
 class PlotThread(QThread):
     channel_data_ready = pyqtSignal(numpy.ndarray)
+    message = pyqtSignal(str)
 
     def __init__(self, num_channels, samples_to_read, update_samples = 1000, parent=None):
         super().__init__(parent)
@@ -157,7 +158,7 @@ class PlotThread(QThread):
                         clean_bytes.append(b)
                     else:
                         if i in self.header_indexes and b != 0xFE:
-                            print(f"[Error] Invalid header byte: {b:#04x} at index {i}")  # Debug: print error message
+                            self.message.emit(f"[Error] Invalid header byte: {b:#04x} at index {i}")  # Debug: print error message
 
                 clean_bytes = bytearray(clean_bytes)
                 values = struct.unpack(self.unpack_format, clean_bytes)
@@ -189,6 +190,8 @@ class PlotThread(QThread):
         self.running = False
 
 class SaveThread(QThread):
+    message = pyqtSignal(str)
+    
     def __init__(self, filename, save_queue):
         super().__init__()
         self.save_queue = save_queue
@@ -203,7 +206,7 @@ class SaveThread(QThread):
                     data = self.save_queue.get(timeout=0.1)
                     f.write(data)
                     f.flush()
-                    print(f'[SAVE] {self.save_number}')
+                    self.message.emit(f'[SAVE] {self.save_number}')
                     self.save_number += 1
                 except queue.Empty:
                     continue
@@ -238,7 +241,7 @@ class interface_visual_gui(QMainWindow):
         elif platform.system() == 'Windows':
             self.interface = uic.loadUi(os.path.dirname(__file__) + "\\interface_gui.ui", self)                     # Loads the interface design archive (made in Qt Designer)
 
-        self.is_raspberry = ("arm" in platform.machine() or "aarch" in platform.machine()) and "raspbian" in platform.platform().lower()
+        self.is_raspberry = interface_functions.is_raspberry_pi()
         # self.is_raspberry = True
         if self.is_raspberry:
             self.machine_lineedit.setText('Raspberry Pi')
@@ -669,6 +672,7 @@ class interface_visual_gui(QMainWindow):
             samples_to_read = self.samples_to_read,
             update_samples = self.update_samples*self.samples_to_read, 
         )
+        self.plot_thread.message.connect(self.logging.appendPlainText)
         self.plot_thread.channel_data_ready.connect(self.update_buffers)
 
         # Start the data receiver in the thread pool
@@ -680,6 +684,7 @@ class interface_visual_gui(QMainWindow):
             is_recording_mode=self.options.is_recording_mode,
             save_queue=self.save_queue
         )
+        self.data_receiver_thread.message.connect(self.logging.appendPlainText)
         self.data_receiver_thread.raw_data_ready.connect(self.plot_thread.push_data)
         self.initial_time = time.perf_counter()
         
@@ -689,6 +694,7 @@ class interface_visual_gui(QMainWindow):
 
         if self.options.is_recording_mode:
             self.save_thread = SaveThread(self.options.save_directory, self.save_queue)
+            self.save_thread.message.connect(self.logging.appendPlainText)
             self.save_thread.start()
             test_minutes = 30
             test_time = test_minutes * 60 * 1000  # Convert to milliseconds

@@ -209,14 +209,15 @@ uint16_t intan_rhd_chip_class::transfer_data(uint16_t data)
  */
 void intan_rhd_chip_class::convert_channels()
 {  
+  if (first_sample) // If it's the first sample, set the first channel to 0
+  {
+    packages_received = 0;
+    first_sample = false;
+  }
+
   // First 16 bits of the buffer are used as a header (0xFE00) to identify the package
   buffer[0] = packages_received << 8 | 0xFE; // Header of the package (is inverted due to MSB logic, the MicroMAP will read 0xFEXX)
   int channel_actual = 0;
-
-  if (first_sample) // If it's the first sample, set the first channel to 0
-  {
-    
-  }
 
   while (channel_actual < channel_count)
   {  

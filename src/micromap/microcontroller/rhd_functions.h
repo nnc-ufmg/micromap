@@ -107,7 +107,7 @@ class intan_rhd_chip_class
     int serial_pinout = 9;                                            // Output pin for chip selection
     int sync_pinout = 13;                                             // Output pin for syncronization trigger
     uint16_t buffer[32 + 1];                                          // Buffer to store data from a single run of all channels (only up to 32 channels at once)
-    uint8_t packages_received = 0;                                    // Count total number of packages with channel DATA received from INTAN
+    uint16_t packages_received = 0;                                    // Count total number of packages with channel DATA received from INTAN
     
     bool usb_serial_flag = true;                                      // USB connection flag
 
@@ -215,8 +215,11 @@ void intan_rhd_chip_class::convert_channels()
     first_sample = false;
   }
 
-  // First 16 bits of the buffer are used as a header (0xFE00) to identify the package
-  buffer[0] = packages_received << 8 | 0xFE; // Header of the package (is inverted due to MSB logic, the MicroMAP will read 0xFEXX)
+  // First 16 bits of the buffer are used as a header (0xFE00) and a count of the number of packages received
+  // buffer[0] = packages_received << 8 | 0xFE; // Header of the package (is inverted due to MSB logic, the MicroMAP will read 0xFEXX)
+  // First 16 bits of the buffer are used as a counter of the number of packages received without the header
+  buffer[0] = (packages_received >> 8) | (packages_received << 8); // Swaps the bytes of the counter (due to little endian logic, the MicroMAP will read correctly the counter)
+  
   int channel_actual = 0;
 
   while (channel_actual < channel_count)

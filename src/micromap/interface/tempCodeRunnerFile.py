@@ -1,1 +1,1 @@
-packet_counter
+self.message.emit(f"[INFO] Stopping data acquisition... ({numpy.sum(self.packets_lost)} packets lost)")

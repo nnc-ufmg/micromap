@@ -62,7 +62,7 @@ class DataReceiverThread(QThread):
     raw_data_ready = pyqtSignal(bytearray)
     message = pyqtSignal(str)
 
-    def __init__(self, usb_port, num_channels, samples_to_read, is_recording_mode, save_queue = None):
+    def __init__(self, usb_port, num_channels, samples_to_read, is_recording_mode, plot_online, save_queue = None):
         super().__init__()
         self.usb = interface_functions.usb_singleton(usb_port, 50000000)
         self.num_channels = num_channels
@@ -74,6 +74,8 @@ class DataReceiverThread(QThread):
         self.expected_counter = None
         self.buffer = bytearray()
         self.read_number = 0
+        self.plot_online = plot_online
+        self.packets_lost = []
 
     def run(self):
         self.running = True
@@ -92,30 +94,44 @@ class DataReceiverThread(QThread):
                         self.buffer = self.buffer[self.bytes_to_read:]
 
                         if self.expected_counter is None:
-                            self.expected_counter = full_packet[1]
+                            # self.expected_counter = full_packet[1]
+                            self.expected_counter = int.from_bytes( full_packet[0:2], byteorder='big')  # Convert to integer
 
-                        packet_counter = full_packet[1]  # Get the packet counter from the second byte
+                        # packet_counter = full_packet[1]  # Get the packet counter from the second byte
+                        packet_counter = int.from_bytes( full_packet[0:2], byteorder='big')  # Convert to integer
+                        
                         if packet_counter != self.expected_counter:
                             self.message.emit(f"[ERROR] Packet counter mismatch: expected {self.expected_counter}, got {packet_counter}")
-                            self.expected_counter = packet_counter  # Update the expected counter to the received one
+                            self.packets_lost.append(numpy.abs(packet_counter - self.expected_counter))  # Store the difference in packet counters
+                            self.expected_counter = packet_counter                                       # Update the expected counter to the received one
 
-                        self.expected_counter = (self.expected_counter + self.samples_to_read) % 256  # Increment the expected counter
+                        # self.expected_counter = (self.expected_counter + self.samples_to_read) % 256  # Increment the expected counter
+                        self.expected_counter = (self.expected_counter + self.samples_to_read) % 65536  # Increment the expected counter
 
                         if self.is_recording_mode and self.save_queue:
                             self.save_queue.put(full_packet)
 
-                        self.raw_data_ready.emit(bytearray(full_packet))
+                        if self.plot_online:
+                            self.raw_data_ready.emit(bytearray(full_packet))  
+
                         self.message.emit(f'[RECEIVE] {self.read_number}')
                         self.read_number += 1
 
                 except Exception as e:
                     self.message.emit(f"[ERROR]: {e}")
 
+        if self.packets_lost != []:
+            self.message.emit(f"[INFO] Stopping data acquisition... ({numpy.sum(self.packets_lost)} packets lost)")
+        else:
+            self.message.emit(f"[INFO] Stopping data acquisition... (No packets lost)")
         self.usb.stop_acquisition()
         self.usb.disconnect()
 
     def stop(self):
         self.running = False
+
+    def online_plotting(self, state):
+        self.plot_online = state
 
 class PlotThread(QThread):
     channel_data_ready = pyqtSignal(numpy.ndarray)
@@ -142,8 +158,8 @@ class PlotThread(QThread):
 
         self.flag_indexes = [[i, i + 1] for i in range(0, self.bytes_to_read, 2*(self.num_channels + 1))]
         self.flag_indexes = numpy.array(self.flag_indexes).flatten()
-        self.header_indexes = self.flag_indexes[0::2]
-        self.count_indexes = self.flag_indexes[1::2]
+        # self.header_indexes = self.flag_indexes[0::2]
+        # self.count_indexes = self.flag_indexes[1::2]
 
     def push_data(self, byte_data):
         self.queue.put(byte_data)
@@ -157,9 +173,9 @@ class PlotThread(QThread):
                 for i, b in enumerate(byte_data):
                     if i not in self.flag_indexes:
                         clean_bytes.append(b)
-                    else:
-                        if i in self.header_indexes and b != 0xFE:
-                            self.message.emit(f"[Error] Invalid header byte: {b:#04x} at index {i}")  # Debug: print error message
+                    # else:
+                    #     if i in self.header_indexes and b != 0xFE:
+                    #         self.message.emit(f"[Error] Invalid header byte: {b:#04x} at index {i}")  # Debug: print error message
 
                 clean_bytes = bytearray(clean_bytes)
                 values = struct.unpack(self.unpack_format, clean_bytes)
@@ -225,7 +241,8 @@ class interface_visual_gui(QMainWindow):
     '''
  
     # CONNECTION AND INITIALIZATION FUNCTIONS ---------------------------------------------------
-    
+    plot_online_emit = pyqtSignal(bool)                                                                    # Signal to send the data to the plot viewer function
+
     def __init__(self):
         '''__init__
         
@@ -261,8 +278,8 @@ class interface_visual_gui(QMainWindow):
         self.plot_online = True                                                                                  # Variable to check if the plot is online or offline
         
         if self.is_raspberry:
-            self.plot_window_sec = 2                                                                                # Number of seconds to be plotted (X axis limit)
-            self.seconds_to_read = 2                                                                                # Number of seconds to be read at time (number of consecutive samples to be read)
+            self.plot_window_sec = 5                                                                                # Number of seconds to be plotted (X axis limit)
+            self.seconds_to_read = 5                                                                                # Number of seconds to be read at time (number of consecutive samples to be read)
             # If update_samples = 100 and samples_to_read_sec = 0.05, then the number of packets to be plotted at time is 100*0.05 = 5 seconds
             self.update_samples = 1                                                                                 # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
         else:
@@ -275,7 +292,7 @@ class interface_visual_gui(QMainWindow):
         if self.update_samples*self.seconds_to_read > self.plot_window_sec:
             raise ValueError("Update rate must be greater than or equal to samples to read.")
 
-        self.plot_viewer_function()                                                                             # Calls the plot viewer function
+        self.plot_viewer_function(16)                                                                           # Calls the plot viewer function
         self.showMaximized()                                                                                    # Maximizes the interface window
         self.show()                                                                                             # Shows the interface to the user
 
@@ -554,7 +571,16 @@ class interface_visual_gui(QMainWindow):
         self.options.set_channels(channels)                                                                     # Changes the channels option in the acquisition object
         self.number_channels_lineshow.setText(str(self.options.num_channels))                                   # Changes the line edit (Record tab) in the interface
         
-        self.plot_viewer_function(max(self.options.channels))                                                    # Sets the Y axis range and scale
+        if self.options.chip == "ADS1298":                                                                 # If the chip is ADS1298
+            max_chan = 8
+        elif self.options.chip == "RHD2216":
+            max_chan = 16
+        elif self.options.chip == "RHD2132":
+            max_chan = 32
+        else:
+            max_chan = 32
+        
+        self.plot_viewer_function(max_chan)                                                    # Sets the Y axis range and scale
 
     # USB FUNCTIONS -----------------------------------------------------------------------------
 
@@ -684,8 +710,10 @@ class interface_visual_gui(QMainWindow):
             num_channels=self.options.num_channels,
             samples_to_read=self.samples_to_read,
             is_recording_mode=self.options.is_recording_mode,
+            plot_online=self.plot_online,
             save_queue=self.save_queue
         )
+        self.plot_online_emit.connect(self.data_receiver_thread.online_plotting)
         self.data_receiver_thread.message.connect(self.logging.appendPlainText)
         self.data_receiver_thread.raw_data_ready.connect(self.plot_thread.push_data)
         self.initial_time = time.perf_counter()
@@ -732,32 +760,29 @@ class interface_visual_gui(QMainWindow):
         self.run_time_lineshow.setText(formatted)  # substitua pelo nome do widget correto
 
     def update_buffers(self, channel_data):
-        if self.plot_online: 
-            overflow = None
-            end = self.write_index + channel_data.shape[1]
-            
-            for i in range(self.options.num_channels):
-                data = channel_data[i] + self.options.channels[i]
-                if end <= self.plot_window:
-                    self.plot_data_arrays[i][self.write_index:end] = data
-                else:
-                    # Parte final + parte inicial
-                    overflow = end - self.plot_window
-                    self.plot_data_arrays[i][self.write_index:] = data[:-overflow]
-                    self.plot_data_arrays[i][:overflow] = data[-overflow:]
-                
-                self.curves[i].setData(x = self.x_values, y = self.plot_data_arrays[i], copy=False)
-
-            if overflow is not None:
-                self.write_index = overflow
+        overflow = None
+        end = self.write_index + channel_data.shape[1]
+        
+        for i in range(self.options.num_channels):
+            data = channel_data[i] + self.options.channels[i]
+            if end <= self.plot_window:
+                self.plot_data_arrays[i][self.write_index:end] = data
             else:
-                self.write_index = end
+                # Parte final + parte inicial
+                overflow = end - self.plot_window
+                self.plot_data_arrays[i][self.write_index:] = data[:-overflow]
+                self.plot_data_arrays[i][:overflow] = data[-overflow:]
+            
+            self.curves[i].setData(x = self.x_values, y = self.plot_data_arrays[i], copy=False)
+
+        if overflow is not None:
+            self.write_index = overflow
+        else:
+            self.write_index = end
 
     def show_plot_function(self):
-        if self.show_plot_checkbox.isChecked():
-            self.plot_online = True
-        else:
-            self.plot_online = False
+        self.plot_online = self.show_plot_checkbox.isChecked()
+        self.plot_online_emit.emit(self.plot_online)
 
     def start_recording_mode_function(self):
         self.stop_threads()
@@ -1076,3 +1101,5 @@ if __name__ == '__main__':
     
     
     
+
+# %%

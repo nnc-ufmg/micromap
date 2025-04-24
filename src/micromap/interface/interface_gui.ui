@@ -1696,23 +1696,10 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
                <x>10</x>
                <y>351</y>
                <width>321</width>
-               <height>31</height>
+               <height>41</height>
               </rect>
              </property>
              <layout class="QGridLayout" name="gridLayout_14">
-              <item row="0" column="0">
-               <widget class="QLabel" name="label_55">
-                <property name="toolTip">
-                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Time passed since the start of recording. Click “Update” to refresh recording progress. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
-                </property>
-                <property name="text">
-                 <string notr="true">EXPERIMENT RUN TIME</string>
-                </property>
-                <property name="alignment">
-                 <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
-                </property>
-               </widget>
-              </item>
               <item row="0" column="2">
                <widget class="QLineEdit" name="run_time_lineshow">
                 <property name="toolTip">
@@ -1723,6 +1710,19 @@ QProgressBar { border: 2px solid #969696;border-radius:5px;text-align:center;col
                 </property>
                 <property name="alignment">
                  <set>Qt::AlignCenter</set>
+                </property>
+               </widget>
+              </item>
+              <item row="0" column="0">
+               <widget class="QLabel" name="label_55">
+                <property name="toolTip">
+                 <string>&lt;html&gt;&lt;head/&gt;&lt;body&gt;&lt;p&gt;Time passed since the start of recording. Click “Update” to refresh recording progress. &lt;/p&gt;&lt;/body&gt;&lt;/html&gt;</string>
+                </property>
+                <property name="text">
+                 <string notr="true">EXPERIMENT RUN TIME</string>
+                </property>
+                <property name="alignment">
+                 <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
                 </property>
                </widget>
               </item>

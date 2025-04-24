@@ -297,13 +297,14 @@ class interface_visual_gui(QMainWindow):
         self.command_send_button.clicked.connect(self.send_command_function)                                        # Called when send button on advanced options is clicked
         self.cancel_advanced_button.clicked.connect(self.cancel_advanced_function)                                  # Called when cancel button on advanced options is clicked
         self.continue_to_record_button.clicked.connect(self.continue_to_record_function)                            # Called when record button on advanced options is clicked 
+        self.change_button.clicked.connect(self.change_attr_function)                                               # Called when change button on advanced options is clicked
         # General interface interactions
         self.check_all_button.clicked.connect(self.check_all_function)                                              # Called when "check/uncheck all" button is clicked
         self.clear_button.clicked.connect(self.clear_function)                                                      # Called when the clear button is clicked
         self.stop_button.clicked.connect(self.stop_function)                                                        # Called when stop button is clicked
         self.record_button.clicked.connect(self.start_view_mode_function)                                           # Called when the clear button is clicked 
         self.show_plot_checkbox.stateChanged.connect(self.show_plot_function)                                       # Called when the "show plot" checkbox is clicked
-                     
+           
     # INTERFACE SELECTIONS FUNCTIONS ------------------------------------------------------------
             
     # Function to set what chip will be used
@@ -792,6 +793,30 @@ class interface_visual_gui(QMainWindow):
         self.start_threads()                                                                                     # Restart the acquisition and plot threads
 
     # ADVANCED SETTINGS FUNCTIONS ---------------------------------------------------------------
+
+    def change_attr_function(self):
+        value = self.value_lineedit.text()                                                                                  # The value is writed in the line edit interface
+        attr = self.attr_lineedit.text()                                                                                  # The attribute is writed in the line edit interface
+
+        if hasattr(self, attr):
+            try:
+                attr_type = type(getattr(self, attr))                                                                                 # Gets the attribute type
+                if attr_type == int:                                                                                       # If the attribute is int
+                    value = int(value)                                                                                       # The value is converted to int
+                elif attr_type == bool:                                                                                     # If the attribute is bool
+                    value = bool(int(value))                                                                                 # The value is converted to bool
+                elif attr_type == float:                                                                                     # If the attribute is float
+                    value = float(value)                                                                                       # The value is converted to int
+                else:
+                    self.change_lineedit.setText('Invalid type')                                                            # Answer in the line edit the text: 'Invalid type'
+                    return                                                                                                  # The program do nothing
+                
+                setattr(self, attr, value)                                                                                 # The attribute is changed
+                self.change_lineedit.setText('Attribute changed')                                                  # Answer in the line edit the text: 'Attribute changed'
+            except ValueError:
+                self.change_lineedit.setText('Invalid value')                                                            # Answer in the line edit the text: 'Invalid value'
+        else:
+            self.change_lineedit.setText('Invalid attribute')                                                           # Answer in the line edit the text: 'Invalid attribute'
 
     def continue_to_record_function(self):
         self.start_threads()                                                                                    # Calls the commmunication function to open the data acquisition thread

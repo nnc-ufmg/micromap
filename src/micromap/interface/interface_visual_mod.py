@@ -260,13 +260,13 @@ class interface_visual_gui(QMainWindow):
         self.plot_online = True                                                                                  # Variable to check if the plot is online or offline
         
         if self.is_raspberry:
-            self.plot_window_sec = 1                                                                                # Number of seconds to be plotted (X axis limit)
-            self.seconds_to_read = 0.5                                                                              # Number of seconds to be read at time (number of consecutive samples to be read)
+            self.plot_window_sec = 2                                                                                # Number of seconds to be plotted (X axis limit)
+            self.seconds_to_read = 2                                                                                # Number of seconds to be read at time (number of consecutive samples to be read)
             # If update_samples = 100 and samples_to_read_sec = 0.05, then the number of packets to be plotted at time is 100*0.05 = 5 seconds
             self.update_samples = 1                                                                                 # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
         else:
             self.plot_window_sec = 5                                                                                 # Number of seconds to be plotted (X axis limit)
-            self.seconds_to_read = 0.5                                                                               # Number of seconds to be read at time (number of consecutive samples to be read)
+            self.seconds_to_read = 0.2                                                                               # Number of seconds to be read at time (number of consecutive samples to be read)
             # If update_samples = 100 and samples_to_read_sec = 0.05, then the number of packets to be plotted at time is 100*0.05 = 5 seconds
             self.update_samples = 1                                                                                  # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
 

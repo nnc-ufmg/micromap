@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy
 import mne
 from scipy.signal import resample
+from scipy.stats import pearsonr
 
 class MicroMAPReader:
     def __init__(self, folder_path):
@@ -15,7 +16,6 @@ class MicroMAPReader:
         self._fill_missing_data()
 
     def _load_metadata(self):
-        # Encontra o .pkl
         for file in os.listdir(self.folder_path):
             if file.endswith("_metadata.pkl"):
                 metadata_file = os.path.join(self.folder_path, file)
@@ -23,7 +23,6 @@ class MicroMAPReader:
         else:
             raise FileNotFoundError("Metadata (.pkl) file not found.")
 
-        # Carrega o dicionário de metadados
         with open(metadata_file, 'rb') as f:
             self.metadata = pickle.load(f)
 
@@ -54,16 +53,7 @@ class MicroMAPReader:
                 folded_packet_counters.append(count)
                 data.extend(block[2:])
 
-        folded_packet_counters = np.array(folded_packet_counters)
-        print(f'Max packet counter: {np.max(folded_packet_counters)}/ Min packet counter: {np.min(folded_packet_counters)}')
-        fig, ax  = plt.subplots(2, 1, sharex=True)
-        ax[0].plot(folded_packet_counters, label="Packet Counter")
-        ax[0].scatter(range(len(folded_packet_counters)), folded_packet_counters, color='red', s=4, label="Samples")
-        ax[0].set_title("Packet Counter")
-        ax[0].set_xlabel("Samples")
-        ax[0].set_ylabel("Counter Value")
-        ax[0].legend()     
-        
+        folded_packet_counters = np.array(folded_packet_counters)        
         self.packet_counters = self._get_unfold_counter(folded_packet_counters, max_value = int(2**16 - 1))                                                 # Unfold the counter values (counter resets to 0 after reaching 2^16 - 1 - 16bits counter)
 
         # Unpack to int16 (signed)
@@ -72,65 +62,18 @@ class MicroMAPReader:
 
         # Apply Intan scaling: 0.195 µV per bit
         self.data = array.T * 0.195  # Output in µV
+        self.num_samples = array.shape[1]
 
-        for ch in range(8, 20):
-            norm_ch = self.data[ch] - np.mean(self.data[ch])
-            norm_ch = norm_ch / np.std(norm_ch)
-            ax[1].plot(norm_ch + ch)
-        
-        ax[1].set_title("Normalized Channels")
-        ax[1].set_xlabel("Samples")
-        ax[1].set_ylabel("Amplitude (µV)")
-        plt.show()
-
-    def get_channel(self, index):
-        """Retorna os dados de um canal (index de 1 a N)."""
-        return self.data[index - 1, :]
-
-    def get_all_data(self):
-        """Retorna todos os dados (channels, samples)."""
-        return self.data
-
-    def get_time_vector(self):
-        """Retorna vetor de tempo com base na frequência de amostragem."""
-        samples = self.data.shape[1]
-        return np.arange(samples) / self.sampling_freq
-    
-    def check_arduino_test(self):
-        """The Arduino test is a signal with the number of the channel varying from num_channel to -num_channel, making a sawtooth signal."""
-        # Check if the data is a sawtooth signal
-        for i in range(self.num_channels):
-            channel_data = self.get_channel(i + 1)
-            first_value = channel_data[0]
-            second_value = channel_data[1]
-
-            if first_value != - second_value:
-                print(f"Channel {i + 1} does not have the expected sawtooth pattern.")
-                return False
-            else:
-                only_first = channel_data[0::2]
-                print(f"Channel {i + 1} first values: {only_first}")
-                only_second = channel_data[1::2]
-                print(f"Channel {i + 1} second values: {only_second}")
-
-                if np.all(only_first == first_value) and np.all(only_second == second_value):
-                    print(f"Channel {i + 1} has the expected sawtooth pattern.")
-                else:
-                    fig, ax  = plt.subplots()
-                    ax.plot(only_first, label="First values")
-                    ax.plot(only_second, label="Second values")
-                    ax.legend()
-                    ax.set_title(f"Channel {i + 1} - Sawtooth signal")
-                    ax.set_xlabel("Samples")
-                    ax.set_ylabel("Amplitude (µV)")
-                    plt.show()
-
-                    bad_index = np.where(only_first != first_value)[0]
-                    print(f"Channel {i + 1} has a bad value at index {bad_index} - {channel_data[bad_index]}")
-                    return False
-        return True
+        if self.data.shape[0] != self.num_channels:
+            raise ValueError(f"Data shape mismatch: expected {self.num_channels} channels, got {self.data.shape[0]} channels.")
 
     def _get_unfold_counter(self, counter_series, max_value = 255):
+        """The counter values are folded, i.e., when the counter reaches the maximum value, it resets to 0. The last implementation the counter
+        is a 16 bits counter, so the maximum value is 2^16 - 1. The function unfolds the counter values to get the real incremental values.
+
+        Ex: (if the counter is 0-255) [0, 1, 2, ..., 254, 255, 0, 1, 2, ...] -> [0, 1, 2, ..., 254, 255, 256, 257, ...]
+        """
+        
         list_max = np.max(counter_series)
         list_min = np.min(counter_series)
         if list_max > max_value or list_min != 0:
@@ -151,9 +94,19 @@ class MicroMAPReader:
         
         return np.array(unfolded)
 
-    def _fill_missing_data(self):
+    def _fill_missing_data(self, fill_method = 'last'):
+        """
+        This function fills the missing data. If a packet is lost, the data lost the time synchronization (packets after the each packet lost are 
+        shifted in time). The function fills the missing data with the last value or with NaN. The function also counts the number of packets lost.
+
+        To perform the filling, the function checks the packet counter values. If the difference between two consecutive packet counters is greater 
+        than 1, it means that a packet was lost.     
+
+        ps:  If the lost is bigger than 2^16 - 1, the function will not be able to fill the data correctly.  
+        """
         filled_counter = []
         filled_data = []
+        packets_lost = 0
 
         for i in range(len(self.packet_counters) - 1):
             curr_val = self.packet_counters[i]
@@ -162,37 +115,79 @@ class MicroMAPReader:
             if curr_val != next_val:
                 curr_data = self.data[:, i]
 
-                # Adiciona valor atual
                 filled_counter.append(curr_val)
                 filled_data.append(curr_data)
 
                 gap = next_val - curr_val - 1
                 if gap > 0:
                     for j in range(1, gap + 1):
-                        filled_counter.append(curr_val + j)
-                        # fill with nans
-                        # filled_data.append(np.full(self.num_channels, np.nan))
-                        # fill with the last value
-                        filled_data.append(curr_data)
-            # else:
-            #     for ch in range(self.num_channels):
-            #         if self.data[ch, i] != self.data[ch, i + 1]:
-            #             raise ValueError(f"The sample number is equal to the next one, but the data is different. Check the data {i} and {i + 1}.")
+                        filled_counter.append(curr_val + j)                        
+                        if fill_method == 'last':
+                            filled_data.append(curr_data)                               # fill with the last value
+                        elif fill_method == 'nan':
+                            filled_data.append(np.full(self.num_channels, np.nan))    # fill with nans
+                        else:
+                            raise ValueError("Invalid fill method. Use 'last' or 'nan'.")
+                        packets_lost += 1
                  
         filled_counter.append(self.packet_counters[-1])
         filled_data.append(self.data[:, -1])
 
         self.data = np.array(filled_data).T
-        print(self.data.shape)
         self.packet_counters = np.array(filled_counter)
+        self.packets_lost = packets_lost
+
+    def get_channel_data(self, index):
+        """Retorna os dados de um canal (index de 1 a N)."""
+        return self.data[index - 1, :]
+
+    def get_data(self):
+        """Retorna todos os dados (channels, samples)."""
+        return self.data
+
+    def get_time_vector(self):
+        """Retorna vetor de tempo com base na frequência de amostragem."""
+        samples = self.data.shape[1]
+        return np.arange(samples) / self.sampling_freq
+    
+    def check_arduino_test(self):
+        """The Arduino test is a signal with the number of the channel varying from num_channel to -num_channel, making a sawtooth signal."""        
+        expected_value = {}
+        for i in range(32):
+            # Convert the integer to bytes
+            byte_array = i.to_bytes(2, byteorder='big', signed=True)
+            # Convert value
+            unpacked = struct.unpack('<' + str(1) + 'h', byte_array)[0]
+            scaled = unpacked * 0.195
+            expected_value[i] = scaled
+
+        # Check if the data is a sawtooth signal
+        stat = {}
+        for i in range(self.num_channels):
+            channel_data = self.get_channel_data(i + 1)
+            first_value = channel_data[0]
+            
+            expected_signal = np.ones(len(channel_data))*expected_value[i]       # Expected signal is a sawtooth signal with the number of the channel varying from num_channel to -num_channel
+            
+            if first_value > 0:
+                expected_signal[1::2] = -expected_signal[1::2]                   # Invert the signal for odd samples   
+            else:
+                expected_signal[0::2] = -expected_signal[0::2]                   # Invert the signal for even samples        
+
+            stat[i] = pearsonr(channel_data, expected_signal)[0]                 # Calculate the correlation coefficient
+
+        return stat
 
     def check_packet_counter(self, plot = False):
-        """Verifica se o contador de pacotes está correto."""
+        """
+        Function to check the packet counter. The function checks if the packet counter is incremented by 1 for each sample. If the difference between 
+        two consecutive packet counters is greater than 1, it means that a packet was lost. The function also plots the packet counter values.
+        """
         
         if plot:
-            fig, ax = plt.subplots()
-            ax.plot(self.packet_counters, label="Packet Counter")
-            ax.scatter(range(len(self.packet_counters)), self.packet_counters, color='red', s=4, label="Samples")
+            _, ax = plt.subplots()
+            ax.plot(self.packet_counters, color = 'dimgrey', label = "Packet Counter")
+            ax.scatter(range(len(self.packet_counters)), self.packet_counters, color = 'maroon', s = 4, label = "Samples")
             ax.set_title("Packet Counter")
             ax.set_xlabel("Samples")
             ax.set_ylabel("Counter Value")
@@ -205,14 +200,14 @@ class MicroMAPReader:
                 print(f"Packet counter error between {curr_val} and {next_val}.")
 
                 if plot:
-                    ax.axvline(x = i, color = 'r', linestyle = '--', label = "Error")
-                    ax.legend()
+                    ax.axvline(x = i, color = 'black', linestyle = '--', label = "Error")
+                    ax.legend(loc = 'upper right')
                     plt.show()
 
                 return False
         
         if plot:
-            ax.legend()
+            ax.legend(loc = 'upper right')
             plt.show()
         
         return True

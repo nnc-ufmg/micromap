@@ -120,6 +120,12 @@ class DataReceiverThread(QThread):
                 except Exception as e:
                     self.message.emit(f"[ERROR]: {e}")
 
+        if len(self.buffer) > 0:
+            if self.is_recording_mode and self.save_queue:
+                self.save_queue.put(full_packet)
+                self.message.emit(f'[RECEIVE] {self.read_number}')
+                self.read_number += 1
+
         if self.packets_lost != []:
             self.message.emit(f"[INFO] Stopping data acquisition... ({numpy.sum(self.packets_lost)} packets lost)")
         else:

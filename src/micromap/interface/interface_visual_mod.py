@@ -98,7 +98,7 @@ class DataReceiverThread(QThread):
                             self.expected_counter = int.from_bytes( full_packet[0:2], byteorder='big')  # Convert to integer
 
                         # packet_counter = full_packet[1]  # Get the packet counter from the second byte
-                        packet_counter = int.from_bytes( full_packet[0:2], byteorder='big')  # Convert to integer
+                        packet_counter = int.from_bytes(full_packet[0:2], byteorder='big')  # Convert to integer
                         
                         if packet_counter != self.expected_counter:
                             self.message.emit(f"[ERROR] Packet counter mismatch: expected {self.expected_counter}, got {packet_counter}")
@@ -274,8 +274,8 @@ class interface_visual_gui(QMainWindow):
         # This dictionary is the output variable of the interface to start the record
         self.options = interface_functions.acquisition()
 
-        self.ads_scale = 0
-        self.plot_online = True                                                                                  # Variable to check if the plot is online or offline
+        self.timeout = None                                                                                         # Variable to check if the timeout is active or not
+        self.plot_online = True                                                                                     # Variable to check if the plot is online or offline
         
         if self.is_raspberry:
             self.plot_window_sec = 5                                                                                # Number of seconds to be plotted (X axis limit)
@@ -299,8 +299,8 @@ class interface_visual_gui(QMainWindow):
         self.timer_updater_timer = QTimer()
         self.timer_updater_timer.timeout.connect(self.update_experiment_timer)
 
-        self.timer_to_test = QTimer()
-        self.timer_to_test.timeout.connect(self.stop_function)
+        self.timeout_timer = QTimer()
+        self.timeout_timer.timeout.connect(self.stop_function)
 
         # INTERFACE INTERACTIONS
         # Record configuration interactions
@@ -322,7 +322,8 @@ class interface_visual_gui(QMainWindow):
         self.stop_button.clicked.connect(self.stop_function)                                                        # Called when stop button is clicked
         self.record_button.clicked.connect(self.start_view_mode_function)                                           # Called when the clear button is clicked 
         self.show_plot_checkbox.stateChanged.connect(self.show_plot_function)                                       # Called when the "show plot" checkbox is clicked
-           
+        self.timeout_button.clicked.connect(self.timeout_function)                                                        # Called when the timeout button is clicked
+
     # INTERFACE SELECTIONS FUNCTIONS ------------------------------------------------------------
             
     # Function to set what chip will be used
@@ -641,7 +642,23 @@ class interface_visual_gui(QMainWindow):
             return
 
         self.get_channels_configuration_function()                                                              # Calls the function to define the channels that will be sampled 
-                
+
+        if self.is_raspberry and self.options.sampling_frequency >= 1000 and self.plot_online == True:          # If the sampling frequency is greater than 1KHz and the plot is online
+            text = "The Raspberry Pi does not support sampling frequencies above " \
+                   "1KHz with online plotting. We strongly recommend " \
+                   "disabling online plotting for better performance. If you want to " \
+                   "see the data, please set the sampling frequency to 500 Hz or less and " \
+                   "decrease the number of channels to 5 or less. Once you have " \
+                   "confirmed that the data is being received correctly, you can set" \
+                   "the online plotting off and increase the sampling frequency and" \
+                   "number of channels.\n\nDo you want to continue?"                                            # Creates a warning message
+            answer = self.option_message_function('WARNING', text)                                              # Shows warning pop-up
+
+            if answer == "yes":
+                self.plot_online = False                                                                        # Sets the plot online variable to true
+            else:
+                return
+
         answer = self.resume_message_function()                                                                 # Calls a function to create the configuration resume message
         if answer == "yes" and self.advanced_checkbox.isChecked() == False:                                     # If the user option is "yes" and advanced settings is not selected  
             self.configure_acquisition()                                                                        # Calls the acquisition configuration function
@@ -725,13 +742,21 @@ class interface_visual_gui(QMainWindow):
         if self.options.is_recording_mode:
             self.save_thread = SaveThread(self.options.save_directory, self.save_queue)
             self.save_thread.message.connect(self.logging.appendPlainText)
+            
+            if self.timeout is not None:            
+                timout_ms = self.timeout * 1000  # Convert to milliseconds
+                self.timeout_timer.start(timout_ms)   # Start the timer to test the connection
+            
             self.save_thread.start()
-            test_minutes = 30
-            test_time = test_minutes * 60 * 1000  # Convert to milliseconds
-            self.timer_to_test.start(test_time)   # Start the timer to test the connection
 
     def stop_threads(self):
         self.timer_updater_timer.stop()
+
+        # Check if exist any timeout timer and stop it
+        try:
+            self.timeout_timer.stop()
+        except:
+            pass
 
         if hasattr(self, 'data_receiver_thread') and self.data_receiver_thread:
             self.data_receiver_thread.stop()
@@ -819,6 +844,17 @@ class interface_visual_gui(QMainWindow):
         self.start_threads()                                                                                     # Restart the acquisition and plot threads
 
     # ADVANCED SETTINGS FUNCTIONS ---------------------------------------------------------------
+
+    def timeout_function(self):
+        try:
+            value = self.timeout_lineedit.text()  # Get the value from the line edit
+            value = int(value)  # Convert to integer
+            
+            if value > 0:
+                self.timeout = value  # Set the timeout value
+                self.change_lineedit.setText('Timeout value set')  # Show success message in the line edit
+        except:
+            self.change_lineedit.setText('Invalid timout value')  # Show error message in the line edit
 
     def change_attr_function(self):
         value = self.value_lineedit.text()                                                                                  # The value is writed in the line edit interface
@@ -913,7 +949,7 @@ class interface_visual_gui(QMainWindow):
             return "yes"                                                                                        # Return "yes"
         else:                                                                                                   # If the button "no" is clicked
             return "no"                                                                                         # Return "no"
-        
+
     # This function show a warning pop-up
     def warning_message_function(self, text):
         warning = QMessageBox(self.interface)                                                                   # Create the message box

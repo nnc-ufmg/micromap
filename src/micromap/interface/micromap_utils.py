@@ -49,8 +49,9 @@ class MicroMAPReader:
 
         for i in range(0, len(raw), block_size):
             block = raw[i:i+block_size]
-            if len(block) == block_size and block[0] == 0xFE:
-                folded_packet_counters.append(block[1])
+            if len(block) == block_size:
+                count = int.from_bytes(block[0:2], byteorder='big')
+                folded_packet_counters.append(count)
                 data.extend(block[2:])
 
         folded_packet_counters = np.array(folded_packet_counters)
@@ -63,14 +64,14 @@ class MicroMAPReader:
         ax[0].set_ylabel("Counter Value")
         ax[0].legend()     
         
-        self.packet_counters = self._get_unfold_counter(folded_packet_counters, max_value = 255)
+        self.packet_counters = self._get_unfold_counter(folded_packet_counters, max_value = 2^16 - 1)                                                 # Unfold the counter values (counter resets to 0 after reaching 2^16 - 1 - 16bits counter)
 
         # Unpack to int16 (signed)
         unpacked = struct.unpack('<' + str(len(data) // 2) + 'h', data)
-        array = np.array(unpacked, dtype = np.int16).reshape(-1, self.num_channels)
+        array = np.array(unpacked, dtype = np.int64).reshape(-1, self.num_channels)
 
         # Apply Intan scaling: 0.195 µV per bit
-        self.data = array.T.astype(np.float64) * 0.195  # Output in µV
+        self.data = array.T * 0.195  # Output in µV
 
         for ch in range(8, 20):
             norm_ch = self.data[ch] - np.mean(self.data[ch])

@@ -97,6 +97,7 @@ class DataReceiverThread(QThread):
                         packet_counter = full_packet[1]  # Get the packet counter from the second byte
                         if packet_counter != self.expected_counter:
                             self.message.emit(f"[ERROR] Packet counter mismatch: expected {self.expected_counter}, got {packet_counter}")
+                            self.expected_counter = packet_counter  # Update the expected counter to the received one
 
                         self.expected_counter = (self.expected_counter + self.samples_to_read) % 256  # Increment the expected counter
 

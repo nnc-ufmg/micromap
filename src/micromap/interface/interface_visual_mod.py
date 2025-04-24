@@ -65,10 +65,14 @@ class DataReceiverThread(QThread):
         super().__init__()
         self.usb = interface_functions.usb_singleton(usb_port, 50000000)
         self.num_channels = num_channels
+        self.samples_to_read = samples_to_read
         self.bytes_to_read = int(samples_to_read*(2*(self.num_channels + 1)))                                                                         # Number of bytes to be read at a time (in this case, at a time will be read 1 sample = 2 bytes per channel + 1 byte header)
         self.running = False
         self.is_recording_mode = is_recording_mode
         self.save_queue = save_queue
+        self.expected_counter = None
+        self.buffer = bytearray()
+        self.read_number = 0
 
     def run(self):
         self.running = True
@@ -77,16 +81,31 @@ class DataReceiverThread(QThread):
         self.usb.request_acquisition()
 
         while self.running:
-            if self.usb.port.in_waiting >= self.bytes_to_read:
+            if self.usb.port.in_waiting > 0:
                 try:
-                    byte_data = self.usb.port.read(self.bytes_to_read)
+                    partial_data = self.usb.port.read(self.usb.port.in_waiting)
+                    self.buffer += partial_data
 
-                    # Save raw data (including FEFE headers)
-                    if self.is_recording_mode and self.save_queue:
-                        self.save_queue.put(byte_data)
+                    while len(self.buffer) >= self.bytes_to_read:                      
+                        print()
+                        full_packet = self.buffer[:self.bytes_to_read]
+                        self.buffer = self.buffer[self.bytes_to_read:]
 
-                    byte_data = bytearray(byte_data)
-                    self.raw_data_ready.emit(byte_data)
+                        if self.expected_counter is None:
+                            self.expected_counter = full_packet[1]
+
+                        packet_counter = full_packet[1]  # Get the packet counter from the second byte
+                        if packet_counter != self.expected_counter:
+                            print(f"[ERROR] Packet counter mismatch: expected {self.expected_counter}, got {packet_counter}")
+
+                        self.expected_counter = (self.expected_counter + self.samples_to_read) % 256  # Increment the expected counter
+
+                        if self.is_recording_mode and self.save_queue:
+                            self.save_queue.put(full_packet)
+
+                        self.raw_data_ready.emit(bytearray(full_packet))
+                        print(f'[RECEIVE] {self.read_number}')
+                        self.read_number += 1
 
                 except Exception as e:
                     print(f"[ERROR]: {e}")
@@ -175,6 +194,7 @@ class SaveThread(QThread):
         self.save_queue = save_queue
         self.filename = filename
         self.running = True
+        self.save_number = 0
 
     def run(self):
         with open(self.filename, 'wb') as f:
@@ -183,6 +203,8 @@ class SaveThread(QThread):
                     data = self.save_queue.get(timeout=0.1)
                     f.write(data)
                     f.flush()
+                    print(f'[SAVE] {self.save_number}')
+                    self.save_number += 1
                 except queue.Empty:
                     continue
 
@@ -217,7 +239,11 @@ class interface_visual_gui(QMainWindow):
             self.interface = uic.loadUi(os.path.dirname(__file__) + "\\interface_gui.ui", self)                     # Loads the interface design archive (made in Qt Designer)
 
         self.is_raspberry = ("arm" in platform.machine() or "aarch" in platform.machine()) and "raspbian" in platform.platform().lower()
-        self.is_raspberry = True
+        # self.is_raspberry = True
+        if self.is_raspberry:
+            self.machine_lineedit.setText('Raspberry Pi')
+        else:
+            self.machine_lineedit.setText('PC')
 
         # Variables for threads
         self.data_receiver = None
@@ -232,14 +258,14 @@ class interface_visual_gui(QMainWindow):
         
         if self.is_raspberry:
             self.plot_window_sec = 1                                                                                # Number of seconds to be plotted (X axis limit)
-            self.seconds_to_read = 0.05                                                                             # Number of seconds to be read at time (number of consecutive samples to be read)
+            self.seconds_to_read = 0.5                                                                              # Number of seconds to be read at time (number of consecutive samples to be read)
             # If update_samples = 100 and samples_to_read_sec = 0.05, then the number of packets to be plotted at time is 100*0.05 = 5 seconds
-            self.update_samples = 20                                                                               # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
+            self.update_samples = 1                                                                                 # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
         else:
             self.plot_window_sec = 5                                                                                 # Number of seconds to be plotted (X axis limit)
-            self.seconds_to_read = 0.05                                                                              # Number of seconds to be read at time (number of consecutive samples to be read)
+            self.seconds_to_read = 0.5                                                                               # Number of seconds to be read at time (number of consecutive samples to be read)
             # If update_samples = 100 and samples_to_read_sec = 0.05, then the number of packets to be plotted at time is 100*0.05 = 5 seconds
-            self.update_samples = 2                                                                                 # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
+            self.update_samples = 1                                                                                  # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
 
         self.plot_window = self.plot_window_sec * self.options.sampling_frequency
         if self.update_samples*self.seconds_to_read > self.plot_window_sec:

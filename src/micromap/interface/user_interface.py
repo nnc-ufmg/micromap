@@ -9,22 +9,11 @@
 #     João Pedro Carvalho Moreira
 #     Belo Horizonte, Minas Gerais, Brasil
 #     Graduated in Eletrical Engineer, UFSJ
-#     Mastering in Eletrical Engineer, UFMG
+#     PhD Student in Eletrical Engineer, UFMG
 #     Member of Núcleo de Neurociências, UFMG
 
 # Advisor: 
 #     Márcio Flávio Dutra Moraes
-
-# Version 1.0.2
-
-# Releases
-# Version 1.0.1
-# - Addition of advanced record programming
-# - Addition of stop/start button
-
-# Releases
-# Version 1.0.2
-# - Addition of functions to cammand the microcontroller
 
 #%% IMPORTS
 
@@ -35,28 +24,18 @@ import math
 import serial.tools.list_ports
 import time
 import struct
-import collections
 import queue
-#import micromap.interface.interface_functions as interface_functions  
 import interface_functions as interface_functions      
 import os
 import platform
 import pickle
 from datetime import datetime, timedelta
 from PyQt5 import QtWidgets, uic    
-from PyQt5.QtCore import QObject, QThread, pyqtSignal, QCoreApplication, QTimer, QRunnable, QThreadPool, QMutex
+from PyQt5.QtCore import QThread, pyqtSignal, QCoreApplication, QTimer
 from PyQt5.QtWidgets import QMessageBox, QMainWindow, QInputDialog, QFileDialog
-from tkinter import Tk
-import threading
-import csv
-from numpy import random
 import platform
-
 from pyqtgraph.Qt import QtGui
-from pyqtgraph import mkPen
 import pyqtgraph
-# pyqtgraph.setConfigOptions(useOpenGL = True)
-pyqtgraph.setConfigOptions(antialias = False)
 
 class DataReceiverThread(QThread):
     raw_data_ready = pyqtSignal(bytearray)
@@ -89,15 +68,16 @@ class DataReceiverThread(QThread):
                     partial_data = self.usb.port.read(self.usb.port.in_waiting)
                     self.buffer += partial_data
 
+                    if self.plot_online:
+                        self.raw_data_ready.emit(bytearray(partial_data))
+
                     while len(self.buffer) >= self.bytes_to_read:                      
                         full_packet = self.buffer[:self.bytes_to_read]
                         self.buffer = self.buffer[self.bytes_to_read:]
 
                         if self.expected_counter is None:
-                            # self.expected_counter = full_packet[1]
                             self.expected_counter = int.from_bytes( full_packet[0:2], byteorder='big')  # Convert to integer
 
-                        # packet_counter = full_packet[1]  # Get the packet counter from the second byte
                         packet_counter = int.from_bytes(full_packet[0:2], byteorder='big')  # Convert to integer
                         
                         if packet_counter != self.expected_counter:
@@ -105,14 +85,10 @@ class DataReceiverThread(QThread):
                             self.packets_lost.append(numpy.abs(packet_counter - self.expected_counter))  # Store the difference in packet counters
                             self.expected_counter = packet_counter                                       # Update the expected counter to the received one
 
-                        # self.expected_counter = (self.expected_counter + self.samples_to_read) % 256  # Increment the expected counter
                         self.expected_counter = (self.expected_counter + self.samples_to_read) % 65536  # Increment the expected counter
 
                         if self.is_recording_mode and self.save_queue:
-                            self.save_queue.put(full_packet)
-
-                        if self.plot_online:
-                            self.raw_data_ready.emit(bytearray(full_packet))  
+                            self.save_queue.put(full_packet)  
 
                         self.message.emit(f'[RECEIVE] {self.read_number}')
                         self.read_number += 1
@@ -122,7 +98,7 @@ class DataReceiverThread(QThread):
 
         if len(self.buffer) > 0:
             if self.is_recording_mode and self.save_queue:
-                self.save_queue.put(full_packet)
+                self.save_queue.put(self.buffer)
                 self.message.emit(f'[RECEIVE] {self.read_number}')
                 self.read_number += 1
 
@@ -143,72 +119,72 @@ class PlotThread(QThread):
     channel_data_ready = pyqtSignal(numpy.ndarray)
     message = pyqtSignal(str)
 
-    def __init__(self, num_channels, samples_to_read, update_samples = 1000, parent=None):
-        super().__init__(parent)
-        if update_samples < samples_to_read:
-            raise ValueError("Update rate must be greater than or equal to samples to read.")        
+    def __init__(self, num_channels, plot_data_window, update_samples = 1000, parent=None):
+        super().__init__(parent)    
+        if plot_data_window < update_samples:
+            raise ValueError("plot_data_window must be greater than update_samples")
         
         self.queue = queue.Queue()
         self.num_channels = num_channels
-        self.samples_to_read = samples_to_read
-        self.update_samples = update_samples
-        self.bytes_to_read = int(samples_to_read*(2*(self.num_channels + 1)))
+        self.update_bytes = update_samples*(2*(self.num_channels + 1))
         self.intan_scale = 1000 * 0.195e-6
         self.running = True
-        self.update_buffer = numpy.zeros((self.num_channels, self.update_samples), dtype=numpy.float32)
+        self.update_buffer = numpy.zeros((self.num_channels, plot_data_window), dtype = numpy.float32)
         self.update_index = 0
         self.buffer_size = self.update_buffer.shape[1]
 
-        unpack_sequence = str((int(samples_to_read*2*self.num_channels)) // 2)   
-        self.unpack_format = "<" + unpack_sequence + "h"
+        print(f"[INFO] Buffer size: {self.buffer_size}")
 
-        self.flag_indexes = [[i, i + 1] for i in range(0, self.bytes_to_read, 2*(self.num_channels + 1))]
-        self.flag_indexes = numpy.array(self.flag_indexes).flatten()
-        # self.header_indexes = self.flag_indexes[0::2]
-        # self.count_indexes = self.flag_indexes[1::2]
+        self.block_size = 2*(self.num_channels + 1)  # 2 bytes por amostra + 2 bytes cabeçalho
+        self.flag_indexes_template = numpy.ones(self.block_size, dtype = bool)
+        self.flag_indexes_template[0:2] = False
 
     def push_data(self, byte_data):
         self.queue.put(byte_data)
 
     def run(self):
+        accumulated_bytes = 0
+        byte_block = bytearray()
+
         while self.running:
             try:
                 byte_data = self.queue.get(timeout=0.1)
+                byte_block.extend(byte_data)
+                accumulated_bytes += len(byte_data)
 
-                clean_bytes = []
-                for i, b in enumerate(byte_data):
-                    if i not in self.flag_indexes:
-                        clean_bytes.append(b)
-                    # else:
-                    #     if i in self.header_indexes and b != 0xFE:
-                    #         self.message.emit(f"[Error] Invalid header byte: {b:#04x} at index {i}")  # Debug: print error message
+                if accumulated_bytes >= self.update_bytes:
+                    repeats = len(byte_block) // self.block_size
+                    flag_indexes = numpy.tile(self.flag_indexes_template, repeats)
+                    
+                    # Processa o pacote
+                    clean_bytes = numpy.frombuffer(byte_block, dtype = numpy.uint8)[flag_indexes].tobytes()
+                    unpack_format = "<" + str(len(clean_bytes)//2) + "h"
+                    values = struct.unpack(unpack_format, clean_bytes)
+                    channel_data = numpy.array([values[i::self.num_channels] for i in range(self.num_channels)], dtype=numpy.float32)
+                    channel_data = channel_data * self.intan_scale
 
-                clean_bytes = bytearray(clean_bytes)
-                values = struct.unpack(self.unpack_format, clean_bytes)
-                channel_data = numpy.array([values[i::self.num_channels] for i in range(self.num_channels)], dtype=numpy.float32)
+                    # Atualiza buffer
+                    update_length = channel_data.shape[1]
+                    end_index = (self.update_index + update_length) % self.buffer_size
 
-                channel_data = channel_data * self.intan_scale
+                    if self.update_index < end_index:
+                        self.update_buffer[:, self.update_index:end_index] = channel_data
+                    else:
+                        first_part = self.buffer_size - self.update_index
+                        self.update_buffer[:, self.update_index:] = channel_data[:, :first_part]
+                        self.update_buffer[:, :update_length - first_part] = channel_data[:, first_part:]
 
-                update_length = channel_data.shape[1]
-                end_index = self.update_index + update_length
+                    self.update_index = end_index
 
-                if end_index <= self.buffer_size:
-                    self.update_buffer[:, self.update_index:end_index] = channel_data
-                else:
-                    # Parte final
-                    first_part = self.buffer_size - self.update_index
-                    self.update_buffer[:, self.update_index:] = channel_data[:, :first_part]
-                    # Parte inicial
-                    self.update_buffer[:, :update_length - first_part] = channel_data[:, first_part:]
-
-                self.update_index = (self.update_index + update_length) % self.buffer_size
-
-                if self.update_index == 0:
                     self.channel_data_ready.emit(self.update_buffer.copy())
+
+                    # Reseta acumuladores
+                    accumulated_bytes = 0
+                    byte_block = bytearray()
 
             except queue.Empty:
                 continue
-
+    
     def stop(self):
         self.running = False
 
@@ -266,7 +242,6 @@ class interface_visual_gui(QMainWindow):
             self.interface = uic.loadUi(os.path.dirname(__file__) + "\\interface_gui.ui", self)                     # Loads the interface design archive (made in Qt Designer)
 
         self.is_raspberry = interface_functions.is_raspberry_pi()
-        # self.is_raspberry = True
         if self.is_raspberry:
             self.machine_lineedit.setText('Raspberry Pi')
         else:
@@ -289,14 +264,12 @@ class interface_visual_gui(QMainWindow):
             # If update_samples = 100 and samples_to_read_sec = 0.05, then the number of packets to be plotted at time is 100*0.05 = 5 seconds
             self.update_samples = 1                                                                                 # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
         else:
-            self.plot_window_sec = 5                                                                                 # Number of seconds to be plotted (X axis limit)
-            self.seconds_to_read = 0.2                                                                               # Number of seconds to be read at time (number of consecutive samples to be read)
+            self.plot_window_sec = 5                                                                                # Number of seconds to be plotted (X axis limit)
+            self.seconds_to_read = 5                                                                                # Number of seconds to be read at time (number of consecutive samples to be read)
             # If update_samples = 100 and samples_to_read_sec = 0.05, then the number of packets to be plotted at time is 100*0.05 = 5 seconds
-            self.update_samples = 1                                                                                  # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
+            self.update_samples = 0.5                                                                               # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
 
         self.plot_window = self.plot_window_sec * self.options.sampling_frequency
-        if self.update_samples*self.seconds_to_read > self.plot_window_sec:
-            raise ValueError("Update rate must be greater than or equal to samples to read.")
 
         self.plot_viewer_function(16)                                                                           # Calls the plot viewer function
         self.showMaximized()                                                                                    # Maximizes the interface window
@@ -328,7 +301,7 @@ class interface_visual_gui(QMainWindow):
         self.stop_button.clicked.connect(self.stop_function)                                                        # Called when stop button is clicked
         self.record_button.clicked.connect(self.start_view_mode_function)                                           # Called when the clear button is clicked 
         self.show_plot_checkbox.stateChanged.connect(self.show_plot_function)                                       # Called when the "show plot" checkbox is clicked
-        self.set_timeout_button.clicked.connect(self.timeout_function)                                                        # Called when the timeout button is clicked
+        self.set_timeout_button.clicked.connect(self.timeout_function)                                              # Called when the timeout button is clicked
 
     # INTERFACE SELECTIONS FUNCTIONS ------------------------------------------------------------
             
@@ -701,27 +674,29 @@ class interface_visual_gui(QMainWindow):
 
         if self.samples_to_read > self.plot_window:
             raise ValueError("samples_to_read must be less than or equal to plot_window")
-        
-        self.write_index = 0
-        self.plot_data_arrays = [numpy.zeros(self.plot_window, dtype=numpy.float32) + self.options.channels[i] for i in range(self.options.num_channels)]
 
         self.x_values = numpy.arange(self.plot_window)
         self.curves = []
         for i in range(self.options.num_channels):
             pen = pyqtgraph.mkPen('white', width=1)
-            curve = self.plot_viewer.plot(self.x_values, self.plot_data_arrays[i], pen=pen)
+            curve = self.plot_viewer.plot(self.x_values, numpy.zeros(self.plot_window) + i, pen=pen)
             if self.is_raspberry:
                 ds = math.ceil(self.options.sampling_frequency/200)
-                curve.setDownsampling(auto=False, ds=ds, method='peak')  # Downsample the curve to reduce the number of points plotted
+                curve.setDownsampling(auto = False, ds=ds, method='peak')                            # Downsample the curve to reduce the number of points plotted
                 curve.setClipToView(True)
                 curve.setSkipFiniteCheck(True)
-            # curve.setDownsampling(auto=False, ds=10, method='peak')  # Downsample the curve to reduce the number of points plotted
+            else:
+                ds = math.ceil(self.options.sampling_frequency/500)
+                curve.setDownsampling(auto = False, ds = ds, method = 'peak')                       # Downsample the curve to reduce the number of points plotted
+                curve.setClipToView(True)
+                curve.setSkipFiniteCheck(True)
+            
             self.curves.append(curve)
 
         self.plot_thread = PlotThread(
             num_channels = self.options.num_channels,
-            samples_to_read = self.samples_to_read,
-            update_samples = self.update_samples*self.samples_to_read, 
+            plot_data_window = self.plot_window,
+            update_samples = math.ceil(self.update_samples*self.options.sampling_frequency), 
         )
         self.plot_thread.message.connect(self.logging.appendPlainText)
         self.plot_thread.channel_data_ready.connect(self.update_buffers)
@@ -791,26 +766,10 @@ class interface_visual_gui(QMainWindow):
         formatted = str(timedelta(seconds=elapsed))
         self.run_time_lineshow.setText(formatted)  # substitua pelo nome do widget correto
 
-    def update_buffers(self, channel_data):
-        overflow = None
-        end = self.write_index + channel_data.shape[1]
-        
-        for i in range(self.options.num_channels):
-            data = channel_data[i] + self.options.channels[i]
-            if end <= self.plot_window:
-                self.plot_data_arrays[i][self.write_index:end] = data
-            else:
-                # Parte final + parte inicial
-                overflow = end - self.plot_window
-                self.plot_data_arrays[i][self.write_index:] = data[:-overflow]
-                self.plot_data_arrays[i][:overflow] = data[-overflow:]
-            
-            self.curves[i].setData(x = self.x_values, y = self.plot_data_arrays[i], copy=False)
-
-        if overflow is not None:
-            self.write_index = overflow
-        else:
-            self.write_index = end
+    def update_buffers(self, channel_data):        
+        for i in range(self.options.num_channels):            
+            data = numpy.add(i, channel_data[i])  # Add the new data to the existing data
+            self.curves[i].setData(x = self.x_values, y = data, copy = False)
 
     def show_plot_function(self):
         self.plot_online = self.show_plot_checkbox.isChecked()
@@ -1134,16 +1093,6 @@ def main():
     app.exec_()                              # Start the application
  
 if __name__ == '__main__': 
-    show = main()    
-
-# app = QtWidgets.QApplication(sys.argv)
-# app.setStyle("windows")
-# window = Ui_NNC_InBrain()
-# app.exec_()
+    show = main()     
     
-    
-    
-    
-    
-
 # %%

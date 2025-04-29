@@ -106,9 +106,10 @@ class intan_rhd_chip_class
     int signal = 1;                                                   // Variable to invert the signal for the next channel
     int serial_pinout = 9;                                            // Output pin for chip selection
     int sync_pinout = 13;                                             // Output pin for syncronization trigger
-    uint16_t buffer[32 + 1];                                          // Buffer to store data from a single run of all channels (only up to 32 channels at once)
-    uint16_t packages_received = 0;                                    // Count total number of packages with channel DATA received from INTAN
-    
+    uint16_t buffer[32 + 2];                                          // Buffer to store data from a single run of all channels (only up to 32 channels at once)
+    // uint16_t packages_received = 0;                                    // Count total number of packages with channel DATA received from INTAN
+    uint32_t micros_start = micros();                      // Gets the time to start the acquisition
+
     bool usb_serial_flag = true;                                      // USB connection flag
 
     bool dataReadIntanOrTest=true;                                    //If true, reads from intan, else saves channel number
@@ -121,7 +122,7 @@ class intan_rhd_chip_class
       
     void convert_channels();                                          // Declares function that sends to RHD chip all converts commands
      
-    bool first_sample = true;                                          // Declares variable that indicates if it's the first sample of the run
+    //bool first_sample = true;                                          // Declares variable that indicates if it's the first sample of the run
     uint16_t write(uint16_t register_number, uint8_t data);           // Declares function that writes to RHD chip registers
     uint16_t read(uint16_t register_number);                          // Declares function that reads to RHD chip registers 
     uint16_t clear();                                                 // Declares function that clears the RHD chip configurations
@@ -209,17 +210,21 @@ uint16_t intan_rhd_chip_class::transfer_data(uint16_t data)
  */
 void intan_rhd_chip_class::convert_channels()
 {  
-  if (first_sample) // If it's the first sample, set the first channel to 0
-  {
-    packages_received = 0;
-    first_sample = false;
-  }
+  // if (first_sample) // If it's the first sample, set the first channel to 0
+  // {
+  //   packages_received = 0;
+  //   first_sample = false;
+  // }
 
   // First 16 bits of the buffer are used as a header (0xFE00) and a count of the number of packages received
   // buffer[0] = packages_received << 8 | 0xFE; // Header of the package (is inverted due to MSB logic, the MicroMAP will read 0xFEXX)
   // First 16 bits of the buffer are used as a counter of the number of packages received without the header
-  buffer[0] = (packages_received >> 8) | (packages_received << 8); // Swaps the bytes of the counter (due to little endian logic, the MicroMAP will read correctly the counter)
+  // buffer[0] = (packages_received >> 8) | (packages_received << 8); // Swaps the bytes of the counter (due to little endian logic, the MicroMAP will read correctly the counter)
   
+  uint32_t timestamp = micros() - micros_start;
+  buffer[0] = (timestamp >> 16) & 0xFFFF; // Parte alta
+  buffer[1] = timestamp & 0xFFFF;         // Parte baixa
+
   int channel_actual = 0;
 
   while (channel_actual < channel_count)
@@ -244,8 +249,8 @@ void intan_rhd_chip_class::convert_channels()
     if (dataWriteIntanOrTest) REG_SPI0_TDR = channel_sequence[channel_actual];                // If dataWriteIntanOrTest is true, send the command to INTAN chip
     else REG_SPI0_TDR = 0xFE00;                                                               // Else, send the command to INTAN chip (for testing purposes)
     while ((REG_SPI0_SR & SPI_SR_TXEMPTY) == 0) {}  
-    if (dataReadIntanOrTest) buffer[(real_channel[channel_actual]) + 1] = REG_SPI0_RDR & 0xFFFF;           // If dataReadIntanOrTest is true, read the data from INTAN chip
-    else buffer[channel_actual + 1] = signal * channel_sequence[channel_actual];                                // Else, save the channel number in the buffer (for testing purposes)
+    if (dataReadIntanOrTest) buffer[(real_channel[channel_actual]) + 2] = REG_SPI0_RDR & 0xFFFF;           // If dataReadIntanOrTest is true, read the data from INTAN chip
+    else buffer[channel_actual + 2] = signal * channel_sequence[channel_actual];                                // Else, save the channel number in the buffer (for testing purposes)
     
     asm volatile("nop"::);asm volatile("nop"::);
     asm volatile("nop"::);asm volatile("nop"::);
@@ -282,7 +287,7 @@ void intan_rhd_chip_class::convert_channels()
   }
 
   if (!dataReadIntanOrTest) signal = signal*-1; // Inverts the signal for the next channel
-  packages_received++;
+  // packages_received++;
   transfer_data_flag = true;
 }
 
@@ -602,7 +607,8 @@ void intan_rhd_chip_class::treat_command(byte *command_buffer)
         start_acquisition(sampling_frequency);              // Starts the data acquisition
         command_buffer[3] = 'K';                            // Sets the byte to answer to interface the ascii ("OK")
         command_buffer[2] = 'O';                            // Sets the byte to answer to interface the ascii ("OK")
-        first_sample = true;                                // Sets the first sample to true (to start the acquisition)
+        //first_sample = true;                                // Sets the first sample to true (to start the acquisition)
+        micros_start = micros();                            // Gets the time to start the acquisition
         break;
 
     /*  STOPS ACQUISITION COMMAND

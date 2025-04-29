@@ -1,1 +1,2 @@
-self.message.emit(f"[INFO] Stopping data acquisition... ({numpy.sum(self.packets_lost)} packets lost)")
+
+                byte_data = numpy.frombuffer(byte_data, dtype=numpy.uint8)

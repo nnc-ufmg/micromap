@@ -9,11 +9,18 @@ from scipy.signal import resample
 from scipy.stats import pearsonr
 
 class MicroMAPReader:
-    def __init__(self, folder_path):
+    def __init__(self, folder_path, counter_type = 'n'):
         self.folder_path = folder_path
         self._load_metadata()
-        self._load_binary_data()
-        self._fill_missing_data()
+        
+        if counter_type == 'us':
+            self._load_binary_data_us()
+            # self._fill_missing_data()
+        elif counter_type == 'n':
+            self._load_binary_data()
+            self._fill_missing_data()
+        else:
+            raise ValueError("Invalid counter type. Use 'us' for unsigned or 'n' for normal.")
 
     def _load_metadata(self):
         for file in os.listdir(self.folder_path):
@@ -30,6 +37,46 @@ class MicroMAPReader:
         self.channels = self.metadata["Channels"]
         self.sampling_freq = self.metadata["Sampling Frequency"]
 
+    def _load_binary_data_us(self):
+        # Find the .mmap file
+        for file in os.listdir(self.folder_path):
+            if file.endswith(".mmap"):
+                bin_file = os.path.join(self.folder_path, file)
+                break
+        else:
+            raise FileNotFoundError("Binary (.mmap) file not found.")
+
+        with open(bin_file, "rb") as f:
+            raw = f.read()
+
+        block_size = 4 + 2 * self.num_channels  # 4 bytes for timestamp + 2*num_channels for data
+        data = bytearray()
+        timestamps = []
+
+        for i in range(0, len(raw), block_size):
+            block = raw[i:i+block_size]
+            if len(block) == block_size:
+                # Read timestamp (4 bytes, big endian)
+                timestamp_high = int.from_bytes(block[0:2], byteorder = 'little')
+                timestamp_low = int.from_bytes(block[2:4], byteorder = 'little')
+                timestamp = (timestamp_high << 16) | timestamp_low
+                timestamps.append(timestamp)
+                data.extend(block[4:])  # Data starts after 4 bytes
+
+        self.timestamps = np.array(timestamps, dtype=np.uint64)  # Save timestamps as array
+        self.packet_counters = self._get_unfold_counter(self.timestamps, max_value = int(2**32 - 1)) # For compatibility (optional)
+
+        # Unpack to int16 (signed)
+        unpacked = struct.unpack('<' + str(len(data) // 2) + 'h', data)
+        array = np.array(unpacked, dtype=np.int64).reshape(-1, self.num_channels)
+
+        # Apply Intan scaling: 0.195 µV per bit
+        self.data = array.T * 0.195  # Output in µV
+        self.num_samples = array.shape[1]
+
+        if self.data.shape[0] != self.num_channels:
+            raise ValueError(f"Data shape mismatch: expected {self.num_channels} channels, got {self.data.shape[0]} channels.")
+
     def _load_binary_data(self):
         # Find the .bin file
         for file in os.listdir(self.folder_path):
@@ -42,14 +89,14 @@ class MicroMAPReader:
         with open(bin_file, "rb") as f:
             raw = f.read()
 
-        block_size = 2 * self.num_channels + 2  # 1 byte header + 1 byte counter + 2*num_channels
+        block_size = 2 * self.num_channels + 2  # 2 bytes to counter + 2*num_channels 
         data = bytearray()
         folded_packet_counters = []
 
         for i in range(0, len(raw), block_size):
-            block = raw[i:i+block_size]
+            block = raw[i:i + block_size]
             if len(block) == block_size:
-                count = int.from_bytes(block[0:2], byteorder='big')
+                count = int.from_bytes(block[0:2], byteorder = 'big')
                 folded_packet_counters.append(count)
                 data.extend(block[2:])
 
@@ -73,11 +120,11 @@ class MicroMAPReader:
 
         Ex: (if the counter is 0-255) [0, 1, 2, ..., 254, 255, 0, 1, 2, ...] -> [0, 1, 2, ..., 254, 255, 256, 257, ...]
         """
-        
         list_max = np.max(counter_series)
         list_min = np.min(counter_series)
-        if list_max > max_value or list_min != 0:
-            raise ValueError("Counter values out of bounds (0 to max_value)")
+        if list_max > max_value:
+            print(f"Counter values: {list_min} to {list_max}.")
+            raise ValueError(f"Counter values out of bounds (0 to {max_value}).")
         
         counter_series = np.asarray(counter_series)
         unfolded = [counter_series[0]]
@@ -92,9 +139,20 @@ class MicroMAPReader:
             
             unfolded.append((current + rollover * (max_value + 1)))
         
+        # fig, ax = plt.subplots(2, 1, figsize=(10, 5))
+        # ax[0].scatter(range(len(unfolded)), unfolded, color = 'maroon', s = 4)
+        # ax[0].plot(unfolded, color = 'dimgrey', label = "Unfolded Packet Counter")
+
+        # for i in range(0, len(counter_series) + 1, self.sampling_freq*5):
+        #     ax[0].axvline(x = i, color = 'black', linestyle = '--', label = "Error")
+
+        # ax[1].plot(numpy.diff(unfolded), color = 'dimgrey', label = "Unfolded Packet Counter")
+        # # ax[1].axhline(y = (1/self.sampling_freq)*1000000, color = 'black', linestyle = '-')
+        # plt.show()
+
         return np.array(unfolded)
 
-    def _fill_missing_data(self, fill_method = 'last'):
+    def _fill_missing_data(self, fill_method = 'last', ax = None):
         """
         This function fills the missing data. If a packet is lost, the data lost the time synchronization (packets after the each packet lost are 
         shifted in time). The function fills the missing data with the last value or with NaN. The function also counts the number of packets lost.
@@ -108,34 +166,51 @@ class MicroMAPReader:
         filled_data = []
         packets_lost = 0
 
+        if ax is None:
+            fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+        
+        ax.scatter(self.packet_counters, self.packet_counters, color = 'maroon', s = 4, label = "Samples")
+
         for i in range(len(self.packet_counters) - 1):
             curr_val = self.packet_counters[i]
             next_val = self.packet_counters[i + 1]
             
-            if curr_val != next_val:
-                curr_data = self.data[:, i]
+            if curr_val == next_val:
+                print("WARNING: Packet counter values are equal. Check the data.")
 
-                filled_counter.append(curr_val)
-                filled_data.append(curr_data)
+            curr_data = self.data[:, i]
 
-                gap = next_val - curr_val - 1
-                if gap > 0:
-                    for j in range(1, gap + 1):
-                        filled_counter.append(curr_val + j)                        
-                        if fill_method == 'last':
-                            filled_data.append(curr_data)                               # fill with the last value
-                        elif fill_method == 'nan':
-                            filled_data.append(np.full(self.num_channels, np.nan))    # fill with nans
-                        else:
-                            raise ValueError("Invalid fill method. Use 'last' or 'nan'.")
-                        packets_lost += 1
-                 
+            filled_counter.append(curr_val)
+            filled_data.append(curr_data)
+
+            gap = next_val - curr_val - 1
+            if gap > 0:
+                print(f"Packet counter error between {curr_val} and {next_val}.")
+                for j in range(1, gap + 1):
+                    filled_counter.append(curr_val + j)                        
+                    if fill_method == 'last':
+                        filled_data.append(curr_data)                               # fill with the last value
+                    elif fill_method == 'nan':
+                        filled_data.append(np.full(self.num_channels, np.nan))    # fill with nans
+                    else:
+                        raise ValueError("Invalid fill method. Use 'last' or 'nan'.")
+                    packets_lost += 1
+
+                ax.axvspan(xmin = i, xmax = i + gap, color = 'black', alpha = 0.2, label = "Lost Packets")
+
         filled_counter.append(self.packet_counters[-1])
         filled_data.append(self.data[:, -1])
 
         self.data = np.array(filled_data).T
         self.packet_counters = np.array(filled_counter)
         self.packets_lost = packets_lost
+
+        fig, ax = plt.subplots(2, 1, figsize=(10, 5))
+        ax[0].scatter(range(len(self.packet_counters)), self.packet_counters, color = 'maroon', s = 4)
+        ax[1].plot(range(len(self.data[0])), self.data[0], color = 'maroon')
+        for i in range(0, len(self.packet_counters) + 1, self.sampling_freq*5):
+            ax[0].axvline(x = i, color = 'black', linestyle = '--', label = "Error")
+            ax[1].axvline(x = i, color = 'black', linestyle = '--', label = "Error")
 
     def get_channel_data(self, index):
         """Retorna os dados de um canal (index de 1 a N)."""

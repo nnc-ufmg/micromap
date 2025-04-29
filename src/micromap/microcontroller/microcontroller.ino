@@ -31,7 +31,7 @@ void loop()
   if(transfer_data_flag)                                                                          // If has data in buffer (flag is True)
   {
     transfer_data_flag = false;                                                                   // Sets the flag to Flase
-    SerialUSB.write((byte *)intan_rhd_chip.buffer, 2*(intan_rhd_chip.channel_count + 1));         // Sends out all data collected via USB
+    SerialUSB.write((byte *)intan_rhd_chip.buffer, 2*(intan_rhd_chip.channel_count + 2));         // Sends out all data collected via USB
   }
 }
 

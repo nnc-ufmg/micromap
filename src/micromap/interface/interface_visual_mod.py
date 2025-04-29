@@ -67,7 +67,7 @@ class DataReceiverThread(QThread):
         self.usb = interface_functions.usb_singleton(usb_port, 50000000)
         self.num_channels = num_channels
         self.samples_to_read = samples_to_read
-        self.bytes_to_read = int(samples_to_read*(2*(self.num_channels + 1)))                                                                         # Number of bytes to be read at a time (in this case, at a time will be read 1 sample = 2 bytes per channel + 1 byte header)
+        self.bytes_to_read = int(samples_to_read*(2*(self.num_channels + 2)))                                                                         # Number of bytes to be read at a time (in this case, at a time will be read 1 sample = 2 bytes per channel + 1 byte header)
         self.running = False
         self.is_recording_mode = is_recording_mode
         self.save_queue = save_queue
@@ -93,20 +93,24 @@ class DataReceiverThread(QThread):
                         full_packet = self.buffer[:self.bytes_to_read]
                         self.buffer = self.buffer[self.bytes_to_read:]
 
-                        if self.expected_counter is None:
-                            # self.expected_counter = full_packet[1]
-                            self.expected_counter = int.from_bytes( full_packet[0:2], byteorder='big')  # Convert to integer
+                        # # Lê timestamp (primeiros 4 bytes)
+                        # packet_timestamp = int.from_bytes(full_packet[0:4], byteorder='big')
 
-                        # packet_counter = full_packet[1]  # Get the packet counter from the second byte
-                        packet_counter = int.from_bytes(full_packet[0:2], byteorder='big')  # Convert to integer
-                        
-                        if packet_counter != self.expected_counter:
-                            self.message.emit(f"[ERROR] Packet counter mismatch: expected {self.expected_counter}, got {packet_counter}")
-                            self.packets_lost.append(numpy.abs(packet_counter - self.expected_counter))  # Store the difference in packet counters
-                            self.expected_counter = packet_counter                                       # Update the expected counter to the received one
+                        # if self.expected_counter is None:
+                        #     self.expected_counter = packet_timestamp
+                        # else:
+                        #     time_diff = (packet_timestamp - self.expected_counter) & 0xFFFFFFFF # Correção wrap-around
 
-                        # self.expected_counter = (self.expected_counter + self.samples_to_read) % 256  # Increment the expected counter
-                        self.expected_counter = (self.expected_counter + self.samples_to_read) % 65536  # Increment the expected counter
+                        #     expected_diff = int(self.samples_to_read * 1_000_000 / self.sampling_rate)
+
+                        #     # Tolerância de erro em microssegundos (por exemplo, 10% do intervalo esperado)
+                        #     tolerance = expected_diff * 0.1
+
+                        #     if abs(time_diff - expected_diff) > tolerance:
+                        #         self.message.emit(f"[WARNING] Timing mismatch: expected ~{expected_diff} us, got {time_diff} us")
+                        #         self.packets_lost.append(abs(time_diff - expected_diff))
+
+                        # self.expected_counter = packet_timestamp
 
                         if self.is_recording_mode and self.save_queue:
                             self.save_queue.put(full_packet)
@@ -122,7 +126,7 @@ class DataReceiverThread(QThread):
 
         if len(self.buffer) > 0:
             if self.is_recording_mode and self.save_queue:
-                self.save_queue.put(full_packet)
+                self.save_queue.put(self.buffer)
                 self.message.emit(f'[RECEIVE] {self.read_number}')
                 self.read_number += 1
 
@@ -152,7 +156,7 @@ class PlotThread(QThread):
         self.num_channels = num_channels
         self.samples_to_read = samples_to_read
         self.update_samples = update_samples
-        self.bytes_to_read = int(samples_to_read*(2*(self.num_channels + 1)))
+        self.bytes_to_read = int(samples_to_read*(2*(self.num_channels + 2)))
         self.intan_scale = 1000 * 0.195e-6
         self.running = True
         self.update_buffer = numpy.zeros((self.num_channels, self.update_samples), dtype=numpy.float32)
@@ -162,7 +166,7 @@ class PlotThread(QThread):
         unpack_sequence = str((int(samples_to_read*2*self.num_channels)) // 2)   
         self.unpack_format = "<" + unpack_sequence + "h"
 
-        self.flag_indexes = [[i, i + 1] for i in range(0, self.bytes_to_read, 2*(self.num_channels + 1))]
+        self.flag_indexes = [[i, i + 1, i + 2, i + 3] for i in range(0, self.bytes_to_read, 2*(self.num_channels + 2))]
         self.flag_indexes = numpy.array(self.flag_indexes).flatten()
         # self.header_indexes = self.flag_indexes[0::2]
         # self.count_indexes = self.flag_indexes[1::2]
@@ -290,7 +294,7 @@ class interface_visual_gui(QMainWindow):
             self.update_samples = 1                                                                                 # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
         else:
             self.plot_window_sec = 5                                                                                 # Number of seconds to be plotted (X axis limit)
-            self.seconds_to_read = 0.2                                                                               # Number of seconds to be read at time (number of consecutive samples to be read)
+            self.seconds_to_read = 2                                                                                 # Number of seconds to be read at time (number of consecutive samples to be read)
             # If update_samples = 100 and samples_to_read_sec = 0.05, then the number of packets to be plotted at time is 100*0.05 = 5 seconds
             self.update_samples = 1                                                                                  # Number of packets (packetd = samples_to_read_sec) to be plotted at time (number of consecutive samples to be plotted)
 

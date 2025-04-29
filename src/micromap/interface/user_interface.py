@@ -37,7 +37,7 @@ import platform
 from pyqtgraph.Qt import QtGui
 import pyqtgraph
 
-class DataReceiverThread(QThread):
+class DataReceiverThreadRHD(QThread):
     raw_data_ready = pyqtSignal(bytearray)
     message = pyqtSignal(str)
 
@@ -115,7 +115,74 @@ class DataReceiverThread(QThread):
     def online_plotting(self, state):
         self.plot_online = state
 
-class PlotThread(QThread):
+class DataReceiverThreadADS(QThread):
+    raw_data_ready = pyqtSignal(bytearray)
+    message = pyqtSignal(str)
+
+    def __init__(self, usb_port, num_channels, samples_to_read, is_recording_mode, plot_online, save_queue = None):
+        super().__init__()
+        self.usb = interface_functions.usb_singleton(usb_port, 50000000)
+        self.num_channels = num_channels
+        self.samples_to_read = samples_to_read
+        self.bytes_to_read = int(samples_to_read*(216//8))                                                                                            # Number of bytes to be read at a time (in this case, at a time will be read 1 sample = 2 bytes per channel + 1 byte header)
+        self.running = False
+        self.is_recording_mode = is_recording_mode
+        self.save_queue = save_queue
+        self.expected_counter = None
+        self.buffer = bytearray()
+        self.read_number = 0
+        self.plot_online = plot_online
+        self.packets_lost = []
+
+    def run(self):
+        self.running = True
+        self.usb.connect()
+        self.usb.clear_buffer()
+        self.usb.request_acquisition()
+
+        while self.running:
+            if self.usb.port.in_waiting > 0:
+                try:
+                    partial_data = self.usb.port.read(self.usb.port.in_waiting)
+                    self.buffer += partial_data
+                    print(partial_data.hex())
+
+                    if self.plot_online:
+                        self.raw_data_ready.emit(bytearray(partial_data))
+
+                    while len(self.buffer) >= self.bytes_to_read:                      
+                        full_packet = self.buffer[:self.bytes_to_read]
+                        self.buffer = self.buffer[self.bytes_to_read:]
+
+                        if self.is_recording_mode and self.save_queue:
+                            self.save_queue.put(full_packet)  
+
+                        self.message.emit(f'[RECEIVE] {self.read_number}')
+                        self.read_number += 1
+
+                except Exception as e:
+                    self.message.emit(f"[ERROR]: {e}")
+
+        if len(self.buffer) > 0:
+            if self.is_recording_mode and self.save_queue:
+                self.save_queue.put(self.buffer)
+                self.message.emit(f'[RECEIVE] {self.read_number}')
+                self.read_number += 1
+
+        if self.packets_lost != []:
+            self.message.emit(f"[INFO] Stopping data acquisition... ({numpy.sum(self.packets_lost)} packets lost)")
+        else:
+            self.message.emit(f"[INFO] Stopping data acquisition... (No packets lost)")
+        self.usb.stop_acquisition()
+        self.usb.disconnect()
+
+    def stop(self):
+        self.running = False
+
+    def online_plotting(self, state):
+        self.plot_online = state
+
+class PlotThreadRHD(QThread):
     channel_data_ready = pyqtSignal(numpy.ndarray)
     message = pyqtSignal(str)
 
@@ -185,6 +252,87 @@ class PlotThread(QThread):
             except queue.Empty:
                 continue
     
+    def stop(self):
+        self.running = False
+
+class PlotThreadADS(QThread):
+    channel_data_ready = pyqtSignal(numpy.ndarray)
+    message = pyqtSignal(str)
+
+    def __init__(self, num_channels, plot_data_window, update_samples=1000, parent=None):
+        super().__init__(parent)
+        if plot_data_window < update_samples:
+            raise ValueError("plot_data_window must be greater than update_samples")
+
+        self.queue = queue.Queue()
+        self.num_channels = num_channels
+        self.update_bytes = update_samples * (3 * (self.num_channels + 1))  # 3 bytes por canal + 3 de header
+        self.ads_scale = 0.488e-6 * 1000  # microvolts para milivolts
+        self.running = True
+        self.update_buffer = numpy.zeros((self.num_channels, plot_data_window), dtype=numpy.float32)
+        self.update_index = 0
+        self.buffer_size = self.update_buffer.shape[1]
+
+        print(f"[INFO] Buffer size: {self.buffer_size}")
+
+        self.block_size = 3 * (self.num_channels + 1)  # 3 bytes de header + 3 bytes por canal
+        self.flag_indexes_template = numpy.ones(self.block_size, dtype=bool)
+        self.flag_indexes_template[0:3] = False  # Ignora os 3 bytes do status word
+
+    def push_data(self, byte_data):
+        self.queue.put(byte_data)
+
+    def run(self):
+        accumulated_bytes = 0
+        byte_block = bytearray()
+
+        while self.running:
+            try:
+                byte_data = self.queue.get(timeout=0.1)
+                byte_block.extend(byte_data)
+                accumulated_bytes += len(byte_data)
+
+                if accumulated_bytes >= self.update_bytes:
+                    repeats = len(byte_block) // self.block_size
+                    flag_indexes = numpy.tile(self.flag_indexes_template, repeats)
+
+                    # Remove status word
+                    clean_bytes = numpy.frombuffer(byte_block, dtype=numpy.uint8)[flag_indexes].tobytes()
+
+                    # Reconstrói os valores de 24 bits -> 32 bits assinados
+                    values = []
+                    for i in range(0, len(clean_bytes), 3):
+                        b1, b2, b3 = clean_bytes[i:i+3]
+                        val = b1 << 16 | b2 << 8 | b3
+                        if val & 0x800000:
+                            val -= 0x1000000  # Sign extension para 2's complement
+                        values.append(val)
+
+                    values = numpy.array(values, dtype=numpy.float32)
+                    values *= self.ads_scale
+
+                    channel_data = numpy.array([values[i::self.num_channels] for i in range(self.num_channels)])
+
+                    update_length = channel_data.shape[1]
+                    end_index = (self.update_index + update_length) % self.buffer_size
+
+                    if self.update_index < end_index:
+                        self.update_buffer[:, self.update_index:end_index] = channel_data
+                    else:
+                        first_part = self.buffer_size - self.update_index
+                        self.update_buffer[:, self.update_index:] = channel_data[:, :first_part]
+                        self.update_buffer[:, :update_length - first_part] = channel_data[:, first_part:]
+
+                    self.update_index = end_index
+                    self.channel_data_ready.emit(self.update_buffer.copy())
+
+                    # Reseta
+                    accumulated_bytes = 0
+                    byte_block = bytearray()
+
+            except queue.Empty:
+                continue
+
     def stop(self):
         self.running = False
 
@@ -313,28 +461,36 @@ class interface_visual_gui(QMainWindow):
         '''
         chip = self.chip_combobox.currentIndex()                                                                # Gets the combo box index
         if chip == 0:                                                                                           # If is selected RHD2216
+            self.sampling_frequency_slider.setEnabled(True)                                                     # Enables sampling frequency slider
             self.highpass_frequency_slider.setEnabled(True)                                                     # Enables high pass filter cutting frequency slider 
             self.highpass_frequency_function()                                                                  # Calls the frequency function to update the information
             self.lowpass_frequency_slider.setEnabled(True)                                                      # Enables low pass filter cutting frequency slider
             self.lowpass_frequency_function()                                                                   # Calls the frequency function to update the information
+            self.channel_08_area.setEnabled(True)                                                                # Enables channels 01 - 08
             self.channel_16_area.setEnabled(True)                                                               # Enables channels 09 - 16        
             self.channel_32_area.setEnabled(False)                                                              # Disables channels 17 - 32
             self.options.chip = "RHD2216"                                                                       # Changes the chip on main variables dictionary 
             self.chip_lineshow.setText("RHD2216")                                                               # Changes the line edit (Record tab) in the interface
         elif chip == 1:                                                                                         # If is selected RHD2132    
+            self.sampling_frequency_slider.setEnabled(True)                                                           # Sets the sampling frequency slider to 0 (2000Hz)
             self.highpass_frequency_slider.setEnabled(True)                                                     # Enables high pass filter cutting frequency slider
             self.highpass_frequency_function()                                                                  # Calls the frequency function to update the information
             self.lowpass_frequency_slider.setEnabled(True)                                                      # Enables low pass filter cutting frequency slider 
             self.lowpass_frequency_function()                                                                   # Calls the frequency function to update the information
+            self.channel_08_area.setEnabled(True)                                                                # Enables channels 01 - 08
             self.channel_16_area.setEnabled(True)                                                               # Enables channels 09 - 16
             self.channel_32_area.setEnabled(True)                                                               # Enables channels 17 - 32
             self.options.chip = "RHD2132"                                                                       # Changes the chip on main variables dictionary
             self.chip_lineshow.setText("RHD2132")                                                               # Changes the line edit (Record tab) in the interface
         elif chip == 2:                                                                                         # If is selected ADS1298
+            self.sampling_frequency_slider.setValue(4)                                                          # Sets the sampling frequency slider to 0 (2000Hz)
+            self.sampling_frequency_function()                                                                  # Calls the frequency function to update the information
+            self.sampling_frequency_slider.setEnabled(False)                                                   # Disables sampling frequency slider
             self.highpass_frequency_slider.setEnabled(False)                                                    # Disables high pass filter cutting frequency slider
             self.highpass_frequency_lineshow.setText("--")                                                      # Changes the line edit (Record tab) in the interface                        
             self.lowpass_frequency_slider.setEnabled(False)                                                     # Disables low pass filter cutting frequency slider
             self.lowpass_frequency_lineshow.setText("--")                                                       # Changes the line edit (Record tab) in the interface   
+            self.channel_08_area.setEnabled(False)                                                                # Enables channels 01 - 08
             self.channel_16_area.setEnabled(False)                                                              # Disables channels 09 - 16
             self.channel_32_area.setEnabled(False)                                                              # Disables channels 17 - 32
             self.options.chip = "ADS1298"                                                                       # Changes the chip on main variables dictionary
@@ -369,6 +525,8 @@ class interface_visual_gui(QMainWindow):
         if chip == "RHD2216" and intan_id == "2":
             return True
         elif chip == "RHD2132" and intan_id == "1":
+            return True
+        elif chip == "ADS1298":
             return True
         else:
             print("Chip not found, the message received was: ", answer.hex())
@@ -547,7 +705,14 @@ class interface_visual_gui(QMainWindow):
         channels.append(self.C31_button.isChecked())                                                            # Checks if a certain channel is active (True or False)
         channels.append(self.C32_button.isChecked())                                                            # Checks if a certain channel is active (True or False)
 
-        channels = numpy.multiply(channels, 1)                                                                  # Transforms "True" in 1 and "False" in 0
+        if self.options.chip == "ADS1298":
+            channels = numpy.zeros(32)                                                                          # Creates a numpy array with 32 zeros
+            channels = numpy.astype(channels, bool)                                                             # Converts the array to boolean
+            channels[0:8] = True                                                                                # Sets the channels to be sampled in the ADS1298 chip
+            channels = numpy.multiply(channels, 1)                                                              # Transforms "True" in 1 and "False" in 0
+        else:
+            channels = numpy.multiply(channels, 1)                                                              # Transforms "True" in 1 and "False" in 0
+        
         self.options.set_channels(channels)                                                                     # Changes the channels option in the acquisition object
         self.number_channels_lineshow.setText(str(self.options.num_channels))                                   # Changes the line edit (Record tab) in the interface
         
@@ -679,7 +844,7 @@ class interface_visual_gui(QMainWindow):
         self.curves = []
         for i in range(self.options.num_channels):
             pen = pyqtgraph.mkPen('white', width=1)
-            curve = self.plot_viewer.plot(self.x_values, numpy.zeros(self.plot_window) + i, pen=pen)
+            curve = self.plot_viewer.plot(self.x_values, numpy.zeros(self.plot_window) + i + 1, pen=pen)
             if self.is_raspberry:
                 ds = math.ceil(self.options.sampling_frequency/200)
                 curve.setDownsampling(auto = False, ds=ds, method='peak')                            # Downsample the curve to reduce the number of points plotted
@@ -693,24 +858,42 @@ class interface_visual_gui(QMainWindow):
             
             self.curves.append(curve)
 
-        self.plot_thread = PlotThread(
-            num_channels = self.options.num_channels,
-            plot_data_window = self.plot_window,
-            update_samples = math.ceil(self.update_samples*self.options.sampling_frequency), 
-        )
+        if self.options.chip != "ADS1298":
+            self.plot_thread = PlotThreadRHD(
+                num_channels = self.options.num_channels,
+                plot_data_window = self.plot_window,
+                update_samples = math.ceil(self.update_samples*self.options.sampling_frequency), 
+            )
+        else:
+            self.plot_thread = PlotThreadADS(
+                num_channels = self.options.num_channels,
+                plot_data_window = self.plot_window,
+                update_samples = math.ceil(self.update_samples*self.options.sampling_frequency), 
+            )
         self.plot_thread.message.connect(self.logging.appendPlainText)
         self.plot_thread.channel_data_ready.connect(self.update_buffers)
 
         # Start the data receiver in the thread pool
         self.save_queue = queue.Queue()
-        self.data_receiver_thread = DataReceiverThread(
-            usb_port=self.options.usb_port,
-            num_channels=self.options.num_channels,
-            samples_to_read=self.samples_to_read,
-            is_recording_mode=self.options.is_recording_mode,
-            plot_online=self.plot_online,
-            save_queue=self.save_queue
-        )
+        if self.options.chip != "ADS1298":                                                                 # If the chip is ADS1298
+            self.data_receiver_thread = DataReceiverThreadRHD(
+                usb_port=self.options.usb_port,
+                num_channels=self.options.num_channels,
+                samples_to_read=self.samples_to_read,
+                is_recording_mode=self.options.is_recording_mode,
+                plot_online=self.plot_online,
+                save_queue=self.save_queue
+            )
+        else:
+            self.data_receiver_thread = DataReceiverThreadADS(
+                usb_port=self.options.usb_port,
+                num_channels=self.options.num_channels,
+                samples_to_read=self.samples_to_read,
+                is_recording_mode=self.options.is_recording_mode,
+                plot_online=self.plot_online,
+                save_queue=self.save_queue
+            )
+
         self.plot_online_emit.connect(self.data_receiver_thread.online_plotting)
         self.data_receiver_thread.message.connect(self.logging.appendPlainText)
         self.data_receiver_thread.raw_data_ready.connect(self.plot_thread.push_data)
@@ -768,7 +951,7 @@ class interface_visual_gui(QMainWindow):
 
     def update_buffers(self, channel_data):        
         for i in range(self.options.num_channels):            
-            data = numpy.add(i, channel_data[i])  # Add the new data to the existing data
+            data = numpy.add(i + 1, channel_data[i])  # Add the new data to the existing data
             self.curves[i].setData(x = self.x_values, y = data, copy = False)
 
     def show_plot_function(self):

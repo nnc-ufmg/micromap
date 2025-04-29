@@ -121,7 +121,7 @@ class intan_rhd_chip_class
       
     void convert_channels();                                          // Declares function that sends to RHD chip all converts commands
      
-    bool first_sample = true;                                          // Declares variable that indicates if it's the first sample of the run
+    bool first_sample = true;                                         // Declares variable that indicates if it's the first sample of the run
     uint16_t write(uint16_t register_number, uint8_t data);           // Declares function that writes to RHD chip registers
     uint16_t read(uint16_t register_number);                          // Declares function that reads to RHD chip registers 
     uint16_t clear();                                                 // Declares function that clears the RHD chip configurations

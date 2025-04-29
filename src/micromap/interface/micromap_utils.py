@@ -166,10 +166,10 @@ class MicroMAPReader:
         filled_data = []
         packets_lost = 0
 
-        if ax is None:
-            fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+        # if ax is None:
+        #     fig, ax = plt.subplots(1, 1, figsize=(10, 5))
         
-        ax.scatter(self.packet_counters, self.packet_counters, color = 'maroon', s = 4, label = "Samples")
+        # ax.scatter(self.packet_counters, self.packet_counters, color = 'maroon', s = 4, label = "Samples")
 
         for i in range(len(self.packet_counters) - 1):
             curr_val = self.packet_counters[i]
@@ -196,7 +196,7 @@ class MicroMAPReader:
                         raise ValueError("Invalid fill method. Use 'last' or 'nan'.")
                     packets_lost += 1
 
-                ax.axvspan(xmin = i, xmax = i + gap, color = 'black', alpha = 0.2, label = "Lost Packets")
+                # ax.axvspan(xmin = i, xmax = i + gap, color = 'black', alpha = 0.2, label = "Lost Packets")
 
         filled_counter.append(self.packet_counters[-1])
         filled_data.append(self.data[:, -1])
@@ -205,12 +205,12 @@ class MicroMAPReader:
         self.packet_counters = np.array(filled_counter)
         self.packets_lost = packets_lost
 
-        fig, ax = plt.subplots(2, 1, figsize=(10, 5))
-        ax[0].scatter(range(len(self.packet_counters)), self.packet_counters, color = 'maroon', s = 4)
-        ax[1].plot(range(len(self.data[0])), self.data[0], color = 'maroon')
-        for i in range(0, len(self.packet_counters) + 1, self.sampling_freq*5):
-            ax[0].axvline(x = i, color = 'black', linestyle = '--', label = "Error")
-            ax[1].axvline(x = i, color = 'black', linestyle = '--', label = "Error")
+        # fig, ax = plt.subplots(2, 1, figsize=(10, 5))
+        # ax[0].scatter(range(len(self.packet_counters)), self.packet_counters, color = 'maroon', s = 4)
+        # ax[1].plot(range(len(self.data[0])), self.data[0], color = 'maroon')
+        # for i in range(0, len(self.packet_counters) + 1, self.sampling_freq*5):
+        #     ax[0].axvline(x = i, color = 'black', linestyle = '--', label = "Error")
+        #     ax[1].axvline(x = i, color = 'black', linestyle = '--', label = "Error")
 
     def get_channel_data(self, index):
         """Retorna os dados de um canal (index de 1 a N)."""

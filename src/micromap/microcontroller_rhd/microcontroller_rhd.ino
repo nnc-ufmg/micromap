@@ -1,7 +1,7 @@
 /*  INCLUDES
  *  Initializes the librarys that will be used
  */
-#include "microcontroller.h"
+#include "microcontroller_rhd.h"
 
 /*  SETUP THE COMMUNICATION
  *  This function initializes the USB and the SPI ports

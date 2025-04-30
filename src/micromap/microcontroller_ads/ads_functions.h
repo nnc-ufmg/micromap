@@ -50,8 +50,8 @@
 #define WCT_CHOP 0x20
 #define INT_TEST 0x10
 #define TEST_AMP 0x04
-#define TEST_FREQ1 0x02
-#define TEST_FREQ0 0x01
+#define TEST_FREQ1 0x01
+#define TEST_FREQ0 0x00
 
 // CONFIG3
 #define PD_REFBUF 0x80
@@ -443,8 +443,8 @@ void ads_1298_chip_class::treat_command(byte *command_buffer) {
       rdatac();
       delay(100);
       start_acquisition(sampling_frequency);  // Starts the data acquisition
-      //command_buffer[3] = 'K';                // Sets the byte to answer to interface the ascii ("OK")
-      //command_buffer[2] = 'O';                // Sets the byte to answer to interface the ascii ("OK")
+      command_buffer[3] = 'K';                // Sets the byte to answer to interface the ascii ("OK")
+      command_buffer[2] = 'O';                // Sets the byte to answer to interface the ascii ("OK")
       break;
 
     /*  STOPS ACQUISITION COMMAND
@@ -454,29 +454,14 @@ void ads_1298_chip_class::treat_command(byte *command_buffer) {
       sdatac();
       digital_write_direct(sync_pinout, LOW);
       stop_acquisition();       // Stops the data aquisition
-      //command_buffer[3] = 'K';  // Sets the byte to answer to interface the ascii ("OK")
-      //command_buffer[2] = 'O';  // Sets the byte to answer to interface the ascii ("OK")
-      break;
-
-    /*  TRANSFER DATA COMMAND
-     *  This function transfers to SPI the data in the last 2 bytes command  
-     */
-    case 0xC5:                                           // This data was received as BIG ENDIAN (MSB at the begining)
-      /**temp_command = (uint16_t *)(command_buffer + 2);   // Gets the last two bytes and saves with a pointer as LITTLE ENDIAN
-      *temp_command = __builtin_bswap16(*temp_command);  // Transforms the pointer to BIG ENDIAN format to send to RHD chip
-      transfer_data(*temp_command);                      // Transfers the that to the RHD chip
-      dummy();                                           // Sends the first dummy
-      *temp_command = SPI.transfer(0);                           // Sends the second dummy, gets the RHD chip answer and saves with a pointer as LITTLE ENDIAN
-      *temp_command = __builtin_bswap16(*temp_command);  // Transforms the pointer to BIG ENDIAN to send back to USB serial port*/
+      command_buffer[3] = 'K';  // Sets the byte to answer to interface the ascii ("OK")
+      command_buffer[2] = 'O';  // Sets the byte to answer to interface the ascii ("OK")
       break;
 
     /*  TEST COMMANDS
      *  These functions test the microcontroller control functions 
      */
-    case 0xE1:              // This command tests the WRITE function
-      write(0x01,0b11001);
-      break;
-
+    
     case 0xE2:             // This command tests the READ function -> ex: 0xe2000003 lê registrador 3
       int valor;
       temp_command = (uint8_t *)(command_buffer + 3);   // Gets the last byte and saves with a pointer as LITTLE ENDIAN
@@ -496,23 +481,6 @@ void ads_1298_chip_class::treat_command(byte *command_buffer) {
       }
       break;
 
-    case 0xE4:
-      digital_write_direct(serial_pinout, LOW);
-      SPI.transfer(0x12);
-      for(int i = 0; i<27; i++){
-        SPI.transfer(0xFF);
-      }
-      digital_write_direct(serial_pinout, HIGH);
-      break;
-
-    case 0xE5:
-      set_sampling_frequency(2000);
-      break;
-
-    case 0xE6:
-      dataTestMode = true;
-      break;
-
     /*  DEFAULT COMMAND 
      *  This function sends a random message to the USB port if the command given to the 
      *  microcontroller does not fulfill any previous cases. 
@@ -522,12 +490,12 @@ void ads_1298_chip_class::treat_command(byte *command_buffer) {
       command_buffer = default_answer;                      // Returns a random default confirmation message
       break;
     
-    // If the command is start acquisition, then the answer is not sent
-    if (command_buffer[0] != 0x11) 
-    {
-      SerialUSB.write(command_buffer,4);                        // Sends back the answer message to USB serial port 
-    }
-}
+  }
+// If the command is start acquisition, then the answer is not sent
+  if (command_buffer[0] != 0x11) 
+  {
+    SerialUSB.write(command_buffer,4);                        // Sends back the answer message to USB serial port 
+  }
 }
 
 #endif

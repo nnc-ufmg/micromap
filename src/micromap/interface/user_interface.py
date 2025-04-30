@@ -145,7 +145,6 @@ class DataReceiverThreadADS(QThread):
                 try:
                     partial_data = self.usb.port.read(self.usb.port.in_waiting)
                     self.buffer += partial_data
-                    print(partial_data.hex())
 
                     if self.plot_online:
                         self.raw_data_ready.emit(bytearray(partial_data))
@@ -309,7 +308,7 @@ class PlotThreadADS(QThread):
                         values.append(val)
 
                     values = numpy.array(values, dtype=numpy.float32)
-                    values *= self.ads_scale
+                    values *= self.ads_scale * 0.01
 
                     channel_data = numpy.array([values[i::self.num_channels] for i in range(self.num_channels)])
 
@@ -517,7 +516,6 @@ class interface_visual_gui(QMainWindow):
             return False
         
         answer = self.usb.send_direct(command)                                                                  # Establishes the direct communication to ITAM
-
         intan_id = str(answer.hex())[-1]
 
         self.usb.disconnect()                                                                                   # Disconnect the USB port
@@ -764,13 +762,15 @@ class interface_visual_gui(QMainWindow):
         self.usb.connect()                                                                                      # Connect the USB port
         
         self.usb.reset_arduino()                                                                                # Resets the Arduino
-        self.usb.set_sampling_frequency(self.options.sampling_frequency)                                        # Sets the sampling frequency
-        self.usb.set_highpass_frequency(self.highpass_frequency_slider.value())                                 # Sets the Highpass Filter frequency
-        self.usb.set_lowpass_frequency(self.lowpass_frequency_slider.value())                                   # Sets the Lowpass Filter frequency
-        self.usb.set_channel_0to15(self.options.channels_bool)                                                  # Sets the 0-15 channels
-        self.usb.set_channel_16to31(self.options.channels_bool)                                                 # Sets the 16-32 channels
+        if self.options.chip != "ADS1298":                                                                      # If the chip is not ADS1298
+            self.usb.set_sampling_frequency(self.options.sampling_frequency)                                        # Sets the sampling frequency
+            self.usb.set_highpass_frequency(self.highpass_frequency_slider.value())                                 # Sets the Highpass Filter frequency
+            self.usb.set_lowpass_frequency(self.lowpass_frequency_slider.value())                                   # Sets the Lowpass Filter frequency
+            self.usb.set_channel_0to15(self.options.channels_bool)                                                  # Sets the 0-15 channels
+            self.usb.set_channel_16to31(self.options.channels_bool)                                                 # Sets the 16-32 channels
 
         self.usb.disconnect()                                                                                   # Disconnects USB port
+        print('oi')
 
     # VIEW MODE FUNCTIONS -----------------------------------------------------------------------
 

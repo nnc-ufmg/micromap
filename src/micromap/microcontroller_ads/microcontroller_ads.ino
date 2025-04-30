@@ -25,7 +25,6 @@ void loop()
   
   if(SerialUSB.available())                                                                       // Deal with what comes in via high speed USB
   {
-    //intan_rhd_chip.setting_command();                                                             // Calls the function that will handle external configuration commands sent via USB
     ads_1298_chip.setting_command();
   }
   

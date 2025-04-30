@@ -299,3 +299,61 @@ class MicroMAPReader:
     def resample(self, new_rate):
         self.data = resample(self.data, int(len(self.data[0])/(self.sampling_freq/new_rate)), axis=1)
         self.sampling_freq = new_rate
+
+class MicroMAPReaderADS:
+    def __init__(self, folder_path):
+        self.folder_path = folder_path
+        self._load_metadata()
+        self._load_binary_data()
+
+    def _load_metadata(self):
+        self.num_channels = 8
+        self.channels = [1,2,3,4,5,6,7,8]
+        self.sampling_freq = 2000
+
+    def _load_binary_data(self):
+        # Find the .mmap file
+        for file in os.listdir(self.folder_path):
+            if file.endswith(".mmap"):
+                bin_file = os.path.join(self.folder_path, file)
+                break
+        else:
+            raise FileNotFoundError("Binary (.mmap) file not found.")
+
+        with open(bin_file, "rb") as f:
+            raw = f.read()
+
+        block_size = 3 + 3 * self.num_channels  # 3 bytes for header + 3*num_channels bytes for data
+
+        if len(raw) % block_size != 0:
+            raise ValueError(f"File size {len(raw)} is not a multiple of block size {block_size}")
+
+        # Remove header bytes (3 bytes per block)
+        flag_indexes_template = numpy.ones(block_size, dtype=bool)
+        flag_indexes_template[0:3] = False  # Ignore the 3-byte header
+        flag_indexes = numpy.tile(flag_indexes_template, len(raw) // block_size)
+        clean_bytes = numpy.frombuffer(raw, dtype=numpy.uint8)[flag_indexes].tobytes()
+
+        # Convert to signed 24-bit integers
+        values = []
+        for i in range(0, len(clean_bytes), 3):
+            b1, b2, b3 = clean_bytes[i:i + 3]
+            val = b1 << 16 | b2 << 8 | b3
+            if val & 0x800000:
+                val -= 0x1000000  # Apply 2's complement
+            values.append(val)
+
+        values = numpy.array(values, dtype=numpy.float32)
+
+        # Set LSB size (same as in your .txt reader)
+        Vref = 4
+        pga_gain = 6
+        lsb_size= (2 * Vref) / pga_gain / ((2 ** 24) - 1)
+        values *= lsb_size
+
+        # Organize by channels
+        self.data = numpy.array([values[i::self.num_channels] for i in range(self.num_channels)])
+        self.num_samples = self.data.shape[1]
+
+        if self.data.shape[0] != self.num_channels:
+            raise ValueError(f"Data shape mismatch: expected {self.num_channels} channels, got {self.data.shape[0]} channels.")

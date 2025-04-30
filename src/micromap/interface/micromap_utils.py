@@ -71,7 +71,7 @@ class MicroMAPReader:
         array = np.array(unpacked, dtype=np.int64).reshape(-1, self.num_channels)
 
         # Apply Intan scaling: 0.195 µV per bit
-        self.data = array.T * 0.195  # Output in µV
+        self.data = array.T * 0.195                                 # Output in µV
         self.num_samples = array.shape[1]
 
         if self.data.shape[0] != self.num_channels:
@@ -347,10 +347,10 @@ class MicroMAPReaderADS:
 
         # Set LSB size (same as in your .txt reader)
         Vref = 4
-        pga_gain = 6
-        lsb_size= (2 * Vref) / pga_gain / ((2 ** 24) - 1)
-        values *= lsb_size
-
+        pga_gain = 12
+        lsb_size = (Vref) / (pga_gain*((2 ** 23) - 1))
+        values *= lsb_size * 1e6  # Convert to microvolts
+        
         # Organize by channels
         self.data = numpy.array([values[i::self.num_channels] for i in range(self.num_channels)])
         self.num_samples = self.data.shape[1]

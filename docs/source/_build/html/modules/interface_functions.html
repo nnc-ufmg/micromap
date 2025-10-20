@@ -1,0 +1,335 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Interface Functions module &mdash; MicroMAP 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../_static/documentation_options.js?v=2709fde1"></script>
+      <script src="../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../index.html" class="icon icon-home">
+            MicroMAP
+              <img src="../_static/logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../installation_python.html">1. Installing Python and MicroMAP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../installation_arduino.html">2. Installing the Arduino Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../building_micromap.html">3. Building the MicroMAP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../building_headstage.html">4. Building the Headstage</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../index.html">MicroMAP</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Interface Functions module</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="../_sources/modules/interface_functions.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="interface-functions-module">
+<h1>Interface Functions module<a class="headerlink" href="#interface-functions-module" title="Link to this heading"></a></h1>
+<p>This module contains functions that are used to interface with the rhd2000 chip.</p>
+<p>All functions listed here are linked to the electrophysiological recording system interface that uses the RHD2000 chip
+This part contains the backend of the package. Herein lies the the parameters programmed by the user
+that will be processed, allocated and modified within the interface of the package.</p>
+<dl class="py class" id="module-micromap.interface.interface_functions">
+<dt class="sig sig-object py" id="micromap.interface.interface_functions.acquisition">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">micromap.interface.interface_functions.</span></span><span class="sig-name descname"><span class="pre">acquisition</span></span><a class="headerlink" href="#micromap.interface.interface_functions.acquisition" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Acquisition</p>
+<p>This class defines the main attributes of signal acquisition. As some
+of these parameters give rise to others through internal operations,
+these are made private and are only accessed via getters and setters.</p>
+<dl class="simple">
+<dt>Settable attributes:</dt><dd><ul class="simple">
+<li><p>Method of acquisition (string)</p></li>
+<li><p>ADC chip type (string)</p></li>
+<li><p>Sampling frequency (index int number)</p></li>
+<li><p>Highpass filter cutoff frequency (index int number)</p></li>
+<li><p>Highpass filter cutoff frequency (index int number)</p></li>
+<li><p>Days, hours, minutes and seconds of record (int)</p></li>
+<li><p>Channels to do acquisiton (boolean list)</p></li>
+<li><p>USB connection port between controller and interface (string)</p></li>
+</ul>
+</dd>
+<dt>Gettable attributes:</dt><dd><p>Normal
+- Method of acquisition (string)
+- ADC chip type (string)
+- Sampling frequency (index int number)
+- Highpass filter cutoff frequency (index int number)
+- Highpass filter cutoff frequency (index int number)
+- Days, hours, minutes and seconds of record (int)
+- Channels to do acquisiton (boolean list)
+- USB connection port between controller and interface (string)
+Extra
+- Number of channels to do acquisition (int)
+- List of channels to do acquisition (number list)
+- Total time of record (number in seconds)</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="micromap.interface.interface_functions.acquisition.set_channels">
+<span class="sig-name descname"><span class="pre">set_channels</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">bool_list</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#micromap.interface.interface_functions.acquisition.set_channels" title="Link to this definition"></a></dt>
+<dd><p>Set channels</p>
+<p>This public function changes the list of channels to be recorded and
+the boolean list of channels to be recorded</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>bool_list</strong> (<em>boolean list</em>) – Boolean list with channels on (1 for on and 1 for off).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="micromap.interface.interface_functions.acquisition.set_highpass_by_index">
+<span class="sig-name descname"><span class="pre">set_highpass_by_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slider_index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#micromap.interface.interface_functions.acquisition.set_highpass_by_index" title="Link to this definition"></a></dt>
+<dd><p>Set highpass by index</p>
+<p>This public function changes the highpass fliter cutoff frequency</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>slider_index</strong> (<em>index int number</em>) – Interface slider index.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="micromap.interface.interface_functions.acquisition.set_lowpass_by_index">
+<span class="sig-name descname"><span class="pre">set_lowpass_by_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slider_index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#micromap.interface.interface_functions.acquisition.set_lowpass_by_index" title="Link to this definition"></a></dt>
+<dd><p>Set lowpass by index</p>
+<p>This public function changes the lowpass fliter cutoff frequency</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>slider_index</strong> (<em>index int number</em>) – Interface slider index.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="micromap.interface.interface_functions.acquisition.set_sampling_frequency_by_index">
+<span class="sig-name descname"><span class="pre">set_sampling_frequency_by_index</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slider_index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#micromap.interface.interface_functions.acquisition.set_sampling_frequency_by_index" title="Link to this definition"></a></dt>
+<dd><p>Set sampling frequency by index</p>
+<p>This public function changes the sampling frequency</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>slider_index</strong> (<em>index int number</em>) – Interface slider index.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="micromap.interface.interface_functions.usb_singleton">
+<em class="property"><span class="k"><span class="pre">class</span></span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">micromap.interface.interface_functions.</span></span><span class="sig-name descname"><span class="pre">usb_singleton</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">usb_port</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">baund_rate</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50000000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#micromap.interface.interface_functions.usb_singleton" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Usb singleton</p>
+<p>This class starts and controls a single USB connection instance</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>usb_port</strong> (<em>string</em>) – Port that will be connected.</p></li>
+<li><p><strong>baund_rate</strong> – Data transfer frequency.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="micromap.interface.interface_functions.usb_singleton.clear_buffer">
+<span class="sig-name descname"><span class="pre">clear_buffer</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#micromap.interface.interface_functions.usb_singleton.clear_buffer" title="Link to this definition"></a></dt>
+<dd><p>Clear buffer</p>
+<p>This function clears the USB port buffer</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="micromap.interface.interface_functions.usb_singleton.connect">
+<span class="sig-name descname"><span class="pre">connect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#micromap.interface.interface_functions.usb_singleton.connect" title="Link to this definition"></a></dt>
+<dd><p>Connect</p>
+<p>This function connect the USB port</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="micromap.interface.interface_functions.usb_singleton.disconnect">
+<span class="sig-name descname"><span class="pre">disconnect</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#micromap.interface.interface_functions.usb_singleton.disconnect" title="Link to this definition"></a></dt>
+<dd><p>Disconnect</p>
+<p>This function disconnect the USB port</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="micromap.interface.interface_functions.usb_singleton.request_acquisition">
+<span class="sig-name descname"><span class="pre">request_acquisition</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#micromap.interface.interface_functions.usb_singleton.request_acquisition" title="Link to this definition"></a></dt>
+<dd><p>Request acquisition</p>
+<p>This function sends to microcontroller the command to initialize the
+data acquisition</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="micromap.interface.interface_functions.usb_singleton.reset_arduino">
+<span class="sig-name descname"><span class="pre">reset_arduino</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#micromap.interface.interface_functions.usb_singleton.reset_arduino" title="Link to this definition"></a></dt>
+<dd><p>Reset arduino</p>
+<p>This function sends a reset command to the microcontroller</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="micromap.interface.interface_functions.usb_singleton.send_direct">
+<span class="sig-name descname"><span class="pre">send_direct</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">command</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#micromap.interface.interface_functions.usb_singleton.send_direct" title="Link to this definition"></a></dt>
+<dd><p>Send direct</p>
+<p>This function sends a generic message to the USB port and receives
+the answer</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>command</strong> – Command to be sent in hexadecimal.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="micromap.interface.interface_functions.usb_singleton.set_channel_0to15">
+<span class="sig-name descname"><span class="pre">set_channel_0to15</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channels_bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#micromap.interface.interface_functions.usb_singleton.set_channel_0to15" title="Link to this definition"></a></dt>
+<dd><p>Set channel 0to15</p>
+<p>This function sends to microcontroller the command to set the channels
+that will be recorded (channels 15 to 0 in this order)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>channels_bool</strong> – Channels that will be recorded in bollean list, 1 turns channel on and 0 turns off (order: 31 to 0).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="micromap.interface.interface_functions.usb_singleton.set_channel_16to31">
+<span class="sig-name descname"><span class="pre">set_channel_16to31</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">channels_bool</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#micromap.interface.interface_functions.usb_singleton.set_channel_16to31" title="Link to this definition"></a></dt>
+<dd><p>Set channel 16to31</p>
+<p>This function sends to microcontroller the command to set the channels
+that will be recorded (channels 31 to 16 in this order)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>channels_bool</strong> – Channels that will be recorded in bollean list, 1 turns channel on and 0 turns off (order: 31 to 0).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="micromap.interface.interface_functions.usb_singleton.set_highpass_frequency">
+<span class="sig-name descname"><span class="pre">set_highpass_frequency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slider_index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#micromap.interface.interface_functions.usb_singleton.set_highpass_frequency" title="Link to this definition"></a></dt>
+<dd><p>Ser highpass frequency</p>
+<p>This function sends to microcontroller the command to set the high pass
+filter cutoff frequency</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>slider_index</strong> – Index that represents the desired frequency (vide table in function “set_highpass”).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="micromap.interface.interface_functions.usb_singleton.set_lowpass_frequency">
+<span class="sig-name descname"><span class="pre">set_lowpass_frequency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">slider_index</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#micromap.interface.interface_functions.usb_singleton.set_lowpass_frequency" title="Link to this definition"></a></dt>
+<dd><p>This function sends to microcontroller the command to set the low pass
+filter cutoff frequency</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>slider_index</strong> – Index that represents the desired frequency (vide table in function “set_lowpass”).</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="micromap.interface.interface_functions.usb_singleton.set_sampling_frequency">
+<span class="sig-name descname"><span class="pre">set_sampling_frequency</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">frequency</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#micromap.interface.interface_functions.usb_singleton.set_sampling_frequency" title="Link to this definition"></a></dt>
+<dd><p>Set sampling frequency</p>
+<p>This function sends to microcontroller the command to set the data
+acquisition sampling frequency</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><p><strong>frequency</strong> – Data acquisition sampling frequency.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="micromap.interface.interface_functions.usb_singleton.stop_acquisition">
+<span class="sig-name descname"><span class="pre">stop_acquisition</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#micromap.interface.interface_functions.usb_singleton.stop_acquisition" title="Link to this definition"></a></dt>
+<dd><p>Stop acquisition</p>
+<p>This function sends to microcontroller the command to stop the
+data acquisition</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, João Pedro C. Moreira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,136 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4. Building the Headstage &mdash; MicroMAP 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2709fde1"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="3. Building the MicroMAP" href="building_micromap.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            MicroMAP
+              <img src="_static/logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation_python.html">1. Installing Python and MicroMAP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation_arduino.html">2. Installing the Arduino Interface</a></li>
+<li class="toctree-l1"><a class="reference internal" href="building_micromap.html">3. Building the MicroMAP</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">4. Building the Headstage</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#fabrication">1. Fabrication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#assembly">2. Assembly</a></li>
+</ul>
+</li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">MicroMAP</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">4. Building the Headstage</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/building_headstage.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="building-the-headstage">
+<h1>4. Building the Headstage<a class="headerlink" href="#building-the-headstage" title="Link to this heading"></a></h1>
+<p>MicroMAP uses a custom horizontal headstage designed to be low-cost and reduce torque on the animal’s head. The system is compatible with two main headstage designs:</p>
+<ul class="simple">
+<li><p><strong>Texas Instruments (TI) ADS1298</strong></p></li>
+<li><p><strong>Intan RHD2000 family</strong></p></li>
+</ul>
+<section id="fabrication">
+<h2>1. Fabrication<a class="headerlink" href="#fabrication" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Get PCB Designs</strong>: The printed circuit board (PCB) designs, created in <strong>KICAD 8</strong>, are available on the project’s GitHub.</p></li>
+<li><p><strong>Fabricate PCBs</strong>: Fabricate the main headstage PCB based on the KiCAD files.</p></li>
+<li><p><strong>Fabricate Connector Plug</strong>: A flat connector plug, implemented as a double-sided PCB, is also required. This design uses plated through-holes for soldering the electrodes.</p></li>
+</ul>
+</section>
+<section id="assembly">
+<h2>2. Assembly<a class="headerlink" href="#assembly" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p><strong>Attach ADC</strong>: The ADC (e.g., ADS1298 or RHD) is attached to the <strong>top layer</strong> of the headstage PCB.</p></li>
+<li><p><strong>Attach Socket</strong>: A 20-pin connector socket is attached to the <strong>bottom layer</strong> of the PCB. This socket interfaces with the flat connector plug.</p></li>
+</ul>
+<p>Refer to Figure 2A (ADS) and 2B (RHD) for 3D renderings and circuit schematics of the headstages.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="building_micromap.html" class="btn btn-neutral float-left" title="3. Building the MicroMAP" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, João Pedro C. Moreira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

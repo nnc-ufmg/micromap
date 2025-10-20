@@ -1,0 +1,34 @@
+###################################
+2. Installing the Arduino Interface
+###################################
+
+The MicroMAP system uses an **Arduino Due** as the microcontroller to handle communication and control of the ADC chipsets (Intan RHD or TI ADS).
+
+Hardware & Software Requirements
+================================
+
+* **Hardware**: Arduino Due
+* **Software**: Arduino IDE
+
+Uploading the Code
+==================
+
+The microcontroller code is programmed in C++ and must be uploaded to the Arduino Due.
+
+1.  **Download the Code**
+
+    The microcontroller code is available in the same GitHub repository.
+
+2.  **Open in Arduino IDE**
+
+    Launch the Arduino IDE and open the `.ino` file for the microcontroller found in the downloaded repository.
+
+3.  **Configure the IDE**
+
+    * Connect your Arduino Due to the computer via USB.
+    * In the Arduino IDE, go to ``Tools > Board`` and select "Arduino Due (Programming Port)".
+    * Go to ``Tools > Port`` and select the COM or tty port corresponding to your Arduino Due.
+
+4.  **Upload**
+
+    Click the "Upload" button (right-arrow icon) in the Arduino IDE to compile and upload the code to the Arduino Due.

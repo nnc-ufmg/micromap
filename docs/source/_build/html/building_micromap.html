@@ -1,0 +1,145 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3. Building the MicroMAP &mdash; MicroMAP 0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=b86133f3" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=2709fde1"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="4. Building the Headstage" href="building_headstage.html" />
+    <link rel="prev" title="2. Installing the Arduino Interface" href="installation_arduino.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            MicroMAP
+              <img src="_static/logo.png" class="logo" alt="Logo"/>
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="installation_python.html">1. Installing Python and MicroMAP</a></li>
+<li class="toctree-l1"><a class="reference internal" href="installation_arduino.html">2. Installing the Arduino Interface</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">3. Building the MicroMAP</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#d-printing-the-enclosure">1. 3D Printing the Enclosure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#component-assembly">2. Component Assembly</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#wiring">3. Wiring</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="building_headstage.html">4. Building the Headstage</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">MicroMAP</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">3. Building the MicroMAP</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/building_micromap.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="building-the-micromap">
+<h1>3. Building the MicroMAP<a class="headerlink" href="#building-the-micromap" title="Link to this heading"></a></h1>
+<p>This section describes the assembly of the MicroMAP enclosure, which houses the core components.</p>
+<section id="d-printing-the-enclosure">
+<h2>1. 3D Printing the Enclosure<a class="headerlink" href="#d-printing-the-enclosure" title="Link to this heading"></a></h2>
+<p>The system is housed in a custom enclosure ($140~mm times 65~mm times 67~mm$).</p>
+<ul class="simple">
+<li><p><strong>Get 3D Models</strong>: All 3D models are available on the project’s GitHub.</p></li>
+<li><p><strong>Print</strong>: Fabricate the enclosure from PLA plastic using a 3D printer.</p></li>
+</ul>
+</section>
+<section id="component-assembly">
+<h2>2. Component Assembly<a class="headerlink" href="#component-assembly" title="Link to this heading"></a></h2>
+<p>The enclosure is designed to house the <strong>Arduino Due</strong> and a <strong>Raspberry Pi</strong> (RPi).</p>
+<ul class="simple">
+<li><p>Install the Arduino Due and RPi into their designated slots in the 3D-printed case.</p></li>
+<li><p>(Optional) A fan can be added for cooling, powered by the RPi’s 5V and ground pins.</p></li>
+</ul>
+</section>
+<section id="wiring">
+<h2>3. Wiring<a class="headerlink" href="#wiring" title="Link to this heading"></a></h2>
+<p>The system requires wiring between the Arduino and an external connector (e.g., RJ45) to interface with the headstage.</p>
+<ul class="simple">
+<li><p><strong>RHD Headstage</strong>: Requires an 8-contact RJ45 connector, using 6 terminals.</p></li>
+<li><p><strong>ADS Headstage</strong>: Requires a 12-contact connector or similar interface.</p></li>
+</ul>
+<p>Refer to Figure 1A and Supplementary Table 2 in the manuscript for detailed wiring schemes between the Arduino and the headstage connector.</p>
+<p>Finally, connect the Arduino ground to a pin fixed to the enclosure to ensure proper grounding.</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="installation_arduino.html" class="btn btn-neutral float-left" title="2. Installing the Arduino Interface" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="building_headstage.html" class="btn btn-neutral float-right" title="4. Building the Headstage" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2023, João Pedro C. Moreira.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

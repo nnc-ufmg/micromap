@@ -10,7 +10,7 @@ sys.path.insert(0, os.path.abspath('../../src'))
 
 project = 'MicroMAP'
 copyright = '2023, João Pedro C. Moreira'
-author = 'João Pedro C. Moreira '
+author = 'João P. Carvalho-Moreira '
 
 release = '0.1'
 version = '0.1'
@@ -21,7 +21,8 @@ extensions = [
     'sphinx.ext.duration',
     'sphinx.ext.autodoc', 
     'sphinx.ext.coverage', 
-    'sphinx.ext.napoleon'
+    'sphinx.ext.napoleon',
+    'sphinx_rtd_theme',
 ]
 
 # -- Options for HTML output

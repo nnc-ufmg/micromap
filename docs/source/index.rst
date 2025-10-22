@@ -22,4 +22,5 @@ All codes, 3D models, and PCB designs are available at the project's GitHub repo
    installation_arduino
    building_micromap
    building_headstage
-
+   modules/interface_functions
+   modules/user_interface

@@ -25,7 +25,7 @@ import serial.tools.list_ports
 import time
 import struct
 import queue
-import interface_functions as interface_functions      
+from . import interface_functions as interface_functions      
 import os
 import platform
 import pickle
